@@ -1,3 +1,10 @@
+## 0.1.1 - Config Flow Fixes (2025-12-27)
+
+### Fixed
+- Allow Home Assistant OS 2025.12+ to reuse bundled `pymodbus>=3.11.2`
+- Provide translations bundle required by 2025.12 config flow loader
+- Clean repository by removing vendor Modbus documentation
+
 ## 0.1.0 - Initial Release (2025-12-27)
 
 ### Added
