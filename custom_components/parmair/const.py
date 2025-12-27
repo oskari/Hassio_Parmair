@@ -76,64 +76,64 @@ def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
     """Return register map for the MAC80 firmware."""
 
     return {
-        REG_HARDWARE_TYPE: RegisterDefinition(REG_HARDWARE_TYPE, 1243, "VENT_MACHINE"),
-        REG_POWER: RegisterDefinition(REG_POWER, 1207, "POWER_BTN_FI", writable=True),
+        REG_HARDWARE_TYPE: RegisterDefinition(REG_HARDWARE_TYPE, 1244, "VENT_MACHINE"),
+        REG_POWER: RegisterDefinition(REG_POWER, 1208, "POWER_BTN_FI", writable=True),
         REG_CONTROL_STATE: RegisterDefinition(
-            REG_CONTROL_STATE, 1184, "IV01_CONTROLSTATE_FO", writable=True
+            REG_CONTROL_STATE, 1185, "IV01_CONTROLSTATE_FO", writable=True
         ),
         REG_SPEED_CONTROL: RegisterDefinition(
-            REG_SPEED_CONTROL, 1186, "IV01_SPEED_FOC", writable=True
+            REG_SPEED_CONTROL, 1187, "IV01_SPEED_FOC", writable=True
         ),
         REG_FRESH_AIR_TEMP: RegisterDefinition(
-            REG_FRESH_AIR_TEMP, 1019, "TE01_M", scale=0.1
+            REG_FRESH_AIR_TEMP, 1020, "TE01_M", scale=0.1
         ),
         REG_SUPPLY_TEMP: RegisterDefinition(
-            REG_SUPPLY_TEMP, 1022, "TE10_M", scale=0.1
+            REG_SUPPLY_TEMP, 1023, "TE10_M", scale=0.1
         ),
         REG_EXHAUST_TEMP: RegisterDefinition(
-            REG_EXHAUST_TEMP, 1023, "TE30_M", scale=0.1
+            REG_EXHAUST_TEMP, 1024, "TE30_M", scale=0.1
         ),
         REG_WASTE_TEMP: RegisterDefinition(
-            REG_WASTE_TEMP, 1024, "TE31_M", scale=0.1
+            REG_WASTE_TEMP, 1025, "TE31_M", scale=0.1
         ),
         REG_EXHAUST_TEMP_SETPOINT: RegisterDefinition(
-            REG_EXHAUST_TEMP_SETPOINT, 1059, "TE30_S", scale=0.1, writable=True
+            REG_EXHAUST_TEMP_SETPOINT, 1060, "TE30_S", scale=0.1, writable=True
         ),
         REG_SUPPLY_TEMP_SETPOINT: RegisterDefinition(
-            REG_SUPPLY_TEMP_SETPOINT, 1064, "TE10_S", scale=0.1, writable=True
+            REG_SUPPLY_TEMP_SETPOINT, 1065, "TE10_S", scale=0.1, writable=True
         ),
         REG_HOME_SPEED: RegisterDefinition(
-            REG_HOME_SPEED, 1103, "HOME_SPEED_S", writable=True
+            REG_HOME_SPEED, 1104, "HOME_SPEED_S", writable=True
         ),
         REG_AWAY_SPEED: RegisterDefinition(
-            REG_AWAY_SPEED, 1104, "AWAY_SPEED_S", writable=True
+            REG_AWAY_SPEED, 1105, "AWAY_SPEED_S", writable=True
         ),
         REG_BOOST_SETTING: RegisterDefinition(
-            REG_BOOST_SETTING, 1116, "BOOST_SETTING_S", writable=True
+            REG_BOOST_SETTING, 1117, "BOOST_SETTING_S", writable=True
         ),
         REG_HOME_STATE: RegisterDefinition(
-            REG_HOME_STATE, 1199, "HOME_STATE_FI"
+            REG_HOME_STATE, 1200, "HOME_STATE_FI"
         ),
         REG_BOOST_STATE: RegisterDefinition(
-            REG_BOOST_STATE, 1200, "BOOST_STATE_FI"
+            REG_BOOST_STATE, 1201, "BOOST_STATE_FI"
         ),
         REG_BOOST_TIMER: RegisterDefinition(
-            REG_BOOST_TIMER, 1201, "BOOST_TIMER_FM"
+            REG_BOOST_TIMER, 1202, "BOOST_TIMER_FM"
         ),
         REG_HUMIDITY: RegisterDefinition(
-            REG_HUMIDITY, 1179, "MEXX_FM", optional=True
+            REG_HUMIDITY, 1180, "MEXX_FM", optional=True
         ),
         REG_CO2: RegisterDefinition(
-            REG_CO2, 1030, "QE20_M", optional=True
+            REG_CO2, 1031, "QE20_M", optional=True
         ),
         REG_ALARM_COUNT: RegisterDefinition(
-            REG_ALARM_COUNT, 1003, "ALARM_COUNT"
+            REG_ALARM_COUNT, 1004, "ALARM_COUNT"
         ),
         REG_SUM_ALARM: RegisterDefinition(
-            REG_SUM_ALARM, 1004, "SUM_ALARM"
+            REG_SUM_ALARM, 1005, "SUM_ALARM"
         ),
         REG_ALARMS_STATE: RegisterDefinition(
-            REG_ALARMS_STATE, 1205, "ALARMS_STATE_FI"
+            REG_ALARMS_STATE, 1206, "ALARMS_STATE_FI"
         ),
     }
 

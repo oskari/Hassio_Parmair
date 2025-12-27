@@ -1,3 +1,10 @@
+## 0.1.12 - Address Calculation Fix (2025-12-27)
+
+### Fixed
+- **CRITICAL**: Fixed off-by-one error in all register addresses
+- Register ID + 1000 = Address (e.g., Register 20 = Address 1020, not 1019)
+- All addresses were off by 1, preventing proper communication
+
 ## 0.1.11 - Register Documentation & Sensor Fixes (2025-12-27)
 
 ### Fixed
