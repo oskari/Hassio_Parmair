@@ -1,3 +1,9 @@
+## 0.1.6 - Legacy Attribute Fallback (2025-12-27)
+
+### Fixed
+- Assign the slave/unit id through client attributes before retrying Modbus calls so extremely old pymodbus clients work during setup and polling.
+- Avoid calling `isError()` on result objects that do not expose the method, preventing AttributeError on legacy responses.
+
 ## 0.1.5 - Legacy Modbus Support (2025-12-27)
 
 ### Fixed

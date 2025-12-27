@@ -28,6 +28,17 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
+    """Best-effort assignment for clients requiring attribute-based unit selection."""
+
+    for attr in ("unit_id", "slave_id", "unit", "slave"):
+        if hasattr(client, attr):
+            try:
+                setattr(client, attr, unit_id)
+            except Exception:  # pragma: no cover
+                continue
+
+
 class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Parmair data from Modbus."""
 
@@ -108,8 +119,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         definition.address, raw_value, slave=self.slave_id
                     )
                 except TypeError:
+                    _set_legacy_unit(self._client, self.slave_id)
                     result = self._client.write_register(
-                        definition.address, raw_value, self.slave_id
+                        definition.address, raw_value
                     )
             return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
@@ -149,10 +161,11 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     definition.address, 1, slave=self.slave_id
                 )
             except TypeError:
+                _set_legacy_unit(self._client, self.slave_id)
                 result = self._client.read_holding_registers(
-                    definition.address, 1, self.slave_id
+                    definition.address, 1
                 )
-        if not result or result.isError():
+        if not result or (hasattr(result, "isError") and result.isError()):
             _LOGGER.debug(
                 "Failed reading register %s (%s)",
                 definition.register_id,

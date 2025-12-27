@@ -14,6 +14,18 @@ from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_integration
 
+
+def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
+    """Best-effort assignment for clients requiring attribute-based unit selection."""
+
+    for attr in ("unit_id", "slave_id", "unit", "slave"):
+        if hasattr(client, attr):
+            try:
+                setattr(client, attr, unit_id)
+            except Exception:  # pragma: no cover
+                continue
+
+
 from .const import (
     CONF_MODEL,
     CONF_SLAVE_ID,
@@ -78,9 +90,10 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                     power_register.address, 1, slave=data[CONF_SLAVE_ID]
                 )
             except TypeError:
-                # Very old clients require positional arguments only
+                # Very old clients require positional arguments only or attribute assignment
+                _set_legacy_unit(client, data[CONF_SLAVE_ID])
                 result = client.read_holding_registers(
-                    power_register.address, 1, data[CONF_SLAVE_ID]
+                    power_register.address, 1
                 )
         return not result.isError() if hasattr(result, 'isError') else result is not None
     
