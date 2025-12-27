@@ -1,3 +1,9 @@
+## 0.1.2 - Handler Compatibility (2025-12-27)
+
+### Fixed
+- Resolve "Invalid handler specified" by registering the config flow domain explicitly
+- Refresh README and register map to drop classified documentation references
+
 ## 0.1.1 - Config Flow Fixes (2025-12-27)
 
 ### Fixed
