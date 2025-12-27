@@ -114,6 +114,13 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 
 - [Modbus Register Documentation](MODBUS_REGISTERS.md)
 
+## Release Notes
+
+### 0.1.3
+- Model selector in the config flow with placeholder support for MAC150.
+- Register metadata exposed via entity attributes for easier troubleshooting.
+- Coordinator read/write logic now uses register definitions for scaling.
+
 ## License
 
 MIT License
