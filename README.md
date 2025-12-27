@@ -121,6 +121,17 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 - Register metadata exposed via entity attributes for easier troubleshooting.
 - Coordinator read/write logic now uses register definitions for scaling.
 
+### 0.1.2
+- Fixed handler registration for Home Assistant 2025.12 config flow loader.
+- Dropped classified documentation references from README and register map.
+
+### 0.1.1
+- Bundled translations and dependency adjustments for Home Assistant 2025.12.
+- Resolved config flow errors related to pymodbus 3.11 compatibility.
+
+### 0.1.0
+- Initial public release with fan control, temperature monitoring, and optional humidity/CO2 sensors.
+
 ## License
 
 MIT License
