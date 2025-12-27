@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yhdistä Parmair MAC -laitteeseen",
+        "description": "Anna Parmair MAC -ilmanvaihtolaitteen yhteystiedot. Laitemalli tunnistetaan automaattisesti. Nykyinen versio: {version}.",
+        "data": {
+          "host": "IP-osoite",
+          "port": "Portti",
+          "slave_id": "Modbus Slave ID",
+          "name": "Nimi"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Laitteeseen ei saatu yhteyttä. Tarkista IP-osoite, portti ja slave ID.",
+      "unknown": "Odottamaton virhe tapahtui."
+    },
+    "abort": {
+      "already_configured": "Tämä laite on jo määritetty."
+    }
+  }
+}

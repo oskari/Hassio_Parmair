@@ -1,3 +1,44 @@
+## 0.2.0 - Controllable Entities & Finnish Translation (2025-12-27)
+
+### Added
+- **Number Platform**: Control fan speed presets and temperature setpoints
+  - Home speed preset (0-4, register 128)
+  - Away speed preset (0-4, register 129)
+  - Boost setting preset (2-4, register 130)
+  - Exhaust temperature setpoint (18-26°C, register 10)
+  - Supply temperature setpoint (15-25°C, register 12)
+- **Switch Platform**: Control system features
+  - Summer mode toggle (register 79)
+  - Time program enable toggle (register 108)
+  - Heater enable toggle (register 109)
+- **Finnish Translation**: Complete fi.json translation for broader user base
+- Updated HACS configuration with number and switch domains
+
+### Changed
+- Expanded integration from read-only monitoring to full control capabilities
+- Users can now adjust fan speeds, temperature targets, and system modes directly from Home Assistant
+
+## 0.2.0 - Control Features & Localization (2025-12-27)
+
+### Added
+- **Number Platform** with 5 controllable entities:
+  - Home Speed Preset (0-4)
+  - Away Speed Preset (0-4)
+  - Boost Setting (2-4)
+  - Exhaust Temperature Setpoint (18-26°C)
+  - Supply Temperature Setpoint (15-25°C)
+- **Switch Platform** with 3 toggle entities:
+  - Summer Mode Enable/Disable
+  - Time Program Enable/Disable
+  - Heater Enable/Disable
+- **Finnish Translation** (fi.json) for complete localization support
+- Write capability via coordinator.async_write_register() method
+- New register definitions: REG_SUMMER_MODE (1079), REG_TIME_PROGRAM_ENABLE (1108), REG_HEATER_ENABLE (1109)
+
+### Changed
+- Updated HACS metadata with "number" and "switch" domains
+- Updated platform list in __init__.py to include Platform.NUMBER and Platform.SWITCH
+
 ## 0.1.13 - Branding Update (2025-12-27)
 
 ### Changed

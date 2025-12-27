@@ -71,6 +71,11 @@ REG_ALARM_COUNT = "alarm_count"
 REG_SUM_ALARM = "sum_alarm"
 REG_ALARMS_STATE = "alarms_state"
 
+# Switch register keys
+REG_SUMMER_MODE = "summer_mode"
+REG_TIME_PROGRAM_ENABLE = "time_program_enable"
+REG_HEATER_ENABLE = "heater_enable"
+
 
 def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
     """Return register map for the MAC80 firmware."""
@@ -134,6 +139,15 @@ def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
         ),
         REG_ALARMS_STATE: RegisterDefinition(
             REG_ALARMS_STATE, 1206, "ALARMS_STATE_FI"
+        ),
+        REG_SUMMER_MODE: RegisterDefinition(
+            REG_SUMMER_MODE, 1079, "SUMMER_MODE_S", writable=True
+        ),
+        REG_TIME_PROGRAM_ENABLE: RegisterDefinition(
+            REG_TIME_PROGRAM_ENABLE, 1108, "TP_ENABLE_S", writable=True
+        ),
+        REG_HEATER_ENABLE: RegisterDefinition(
+            REG_HEATER_ENABLE, 1109, "HEATER_ENABLE_S", writable=True
         ),
     }
 

@@ -1,6 +1,6 @@
 {
-  "name": "Parmair Ventilation",
+  "name": "Parmair MAC",
   "content_in_root": false,
   "render_readme": true,
-  "domains": ["fan", "sensor"]
+  "domains": ["fan", "number", "sensor", "switch"]
 }
