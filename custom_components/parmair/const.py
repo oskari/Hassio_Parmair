@@ -10,6 +10,7 @@ DOMAIN = "parmair"
 # Configuration
 CONF_SLAVE_ID = "slave_id"
 CONF_MODEL = "model"
+CONF_SCAN_INTERVAL = "scan_interval"
 
 DEFAULT_NAME = "Parmair MAC"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
@@ -18,6 +19,7 @@ DEFAULT_SLAVE_ID = 1
 
 # Supported hardware profiles
 MODEL_MAC80 = "MAC80"
+MODEL_MAC100 = "MAC100"
 MODEL_MAC150 = "MAC150"
 MODEL_UNKNOWN = "Unknown"
 DEFAULT_MODEL = MODEL_MAC80
@@ -153,11 +155,13 @@ def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
 
 
 MAC80_REGISTERS = _build_mac80_registers()
-# Placeholder: MAC150 currently mirrors MAC80 until official register sheet is available.
+# MAC100 and MAC150 currently mirror MAC80 until official register sheets are available.
+MAC100_REGISTERS = dict(MAC80_REGISTERS)
 MAC150_REGISTERS = dict(MAC80_REGISTERS)
 
 REGISTER_MAP: Dict[str, Dict[str, RegisterDefinition]] = {
     MODEL_MAC80: MAC80_REGISTERS,
+    MODEL_MAC100: MAC100_REGISTERS,
     MODEL_MAC150: MAC150_REGISTERS,
 }
 

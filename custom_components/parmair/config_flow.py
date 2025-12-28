@@ -28,13 +28,14 @@ def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
 
 from .const import (
     CONF_MODEL,
+    CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
     DEFAULT_MODEL,
     DEFAULT_NAME,
     DEFAULT_PORT,
+    DEFAULT_SCAN_INTERVAL,
     DEFAULT_SLAVE_ID,
     DOMAIN,
-    HARDWARE_TYPE_MAP,
     MODEL_UNKNOWN,
     REG_HARDWARE_TYPE,
     REG_POWER,
@@ -55,6 +56,9 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=247)
+        ),
+        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
+            vol.Coerce(int), vol.Range(min=5, max=300)
         ),
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     }
@@ -115,12 +119,18 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             else:
                 hardware_type = result
             
-            # Return raw hardware type number as model
+            # Format model based on VENT_MACHINE value (80 -> MAC80, 100 -> MAC100, 150 -> MAC150)
+            if hardware_type in (80, 100, 150):
+                detected_model = f"MAC{hardware_type}"
+            else:
+                detected_model = MODEL_UNKNOWN
+            
             _LOGGER.info(
-                "Auto-detected hardware type: %s",
+                "Auto-detected VENT_MACHINE value: %s, model: %s",
                 hardware_type,
+                detected_model,
             )
-            return str(hardware_type)
+            return detected_model
         except Exception as ex:
             _LOGGER.warning("Could not auto-detect model, using default: %s", ex)
             return DEFAULT_MODEL

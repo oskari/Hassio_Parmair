@@ -16,6 +16,7 @@ from homeassistant.config_entries import ConfigEntry
 
 from .const import (
     CONF_MODEL,
+    CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
     DEFAULT_MODEL,
     DEFAULT_SCAN_INTERVAL,
@@ -50,6 +51,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.port = entry.data[CONF_PORT]
         self.slave_id = entry.data[CONF_SLAVE_ID]
         self.model = entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+        scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         self._registers = get_registers_for_model(self.model)
         self._poll_registers: list[RegisterDefinition] = [
             self._registers[key]
@@ -64,7 +66,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{self.host}",
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=scan_interval),
         )
 
     async def _async_update_data(self) -> dict[str, Any]:

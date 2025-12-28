@@ -8,6 +8,7 @@
           "host": "IP Address",
           "port": "Port",
           "slave_id": "Modbus Slave ID",
+          "scan_interval": "Polling Interval (seconds)",
           "name": "Name"
         }
       }

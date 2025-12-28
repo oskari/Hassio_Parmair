@@ -8,6 +8,7 @@
           "host": "IP-osoite",
           "port": "Portti",
           "slave_id": "Modbus Slave ID",
+          "scan_interval": "Kyselyväli (sekuntia)",
           "name": "Nimi"
         }
       }
