@@ -56,6 +56,7 @@ REG_POWER = "power"
 REG_CONTROL_STATE = "control_state"
 REG_SPEED_CONTROL = "speed_control"
 REG_FRESH_AIR_TEMP = "fresh_air_temp"
+REG_SUPPLY_AFTER_RECOVERY_TEMP = "supply_after_recovery_temp"
 REG_SUPPLY_TEMP = "supply_temp"
 REG_EXHAUST_TEMP = "exhaust_temp"
 REG_WASTE_TEMP = "waste_temp"
@@ -93,6 +94,9 @@ def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
         ),
         REG_FRESH_AIR_TEMP: RegisterDefinition(
             REG_FRESH_AIR_TEMP, 1020, "TE01_M", scale=0.1
+        ),
+        REG_SUPPLY_AFTER_RECOVERY_TEMP: RegisterDefinition(
+            REG_SUPPLY_AFTER_RECOVERY_TEMP, 1022, "TE05_M", scale=0.1
         ),
         REG_SUPPLY_TEMP: RegisterDefinition(
             REG_SUPPLY_TEMP, 1023, "TE10_M", scale=0.1
@@ -173,6 +177,7 @@ POLLING_REGISTER_KEYS = (
     REG_CONTROL_STATE,
     REG_SPEED_CONTROL,
     REG_FRESH_AIR_TEMP,
+    REG_SUPPLY_AFTER_RECOVERY_TEMP,
     REG_SUPPLY_TEMP,
     REG_EXHAUST_TEMP,
     REG_WASTE_TEMP,

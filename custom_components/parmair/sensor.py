@@ -41,6 +41,7 @@ async def async_setup_entry(
     entities = [
         # Temperature sensors
         ParmairTemperatureSensor(coordinator, entry, "fresh_air_temp", "Fresh Air Temperature"),
+        ParmairTemperatureSensor(coordinator, entry, "supply_after_recovery_temp", "Supply Air Temperature (After Recovery)"),
         ParmairTemperatureSensor(coordinator, entry, "supply_temp", "Supply Air Temperature"),
         ParmairTemperatureSensor(coordinator, entry, "exhaust_temp", "Exhaust Air Temperature"),
         ParmairTemperatureSensor(coordinator, entry, "waste_temp", "Waste Air Temperature"),
