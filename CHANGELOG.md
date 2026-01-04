@@ -1,3 +1,16 @@
+## 0.6.3 - Documentation Security Update (2026-01-04)
+
+### Changed
+- Removed all Modbus register address numbers from public documentation
+- Removed register/address mapping tables from SETUP_COMPLETE.md
+- Keep only register names (e.g., FILTER_DAY, MULTI_FW_VER) in documentation
+- Per Parmair manufacturer request: restrict normal user access to registry numbers
+
+### Technical
+- Register addresses remain in source code (const.py) for functionality
+- Only public-facing documentation files modified
+- No changes to integration functionality
+
 ## 0.6.2 - Filter Change Date Sensor (2026-01-04)
 
 ### Added
