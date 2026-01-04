@@ -1,3 +1,19 @@
+## 0.7.4 - Add Speed Control Sensor and Manual Speed Control (2026-01-04)
+
+### Added
+- **Speed Control sensor** - Displays current speed setting (Auto, Stop, Speed 1-5)
+- **Manual Speed Control number entity** - Allows direct speed control (0-6)
+  - 0 = Auto mode
+  - 1 = Stop
+  - 2-6 = Speed 1-5
+- Speed map information shown in Manual Speed Control attributes
+
+### Technical
+- Added ParmairSpeedControlSensor class (enum sensor with 7 states)
+- Added ParmairManualSpeedNumber class (number entity 0-6)
+- Reads/writes REG_SPEED_CONTROL (register 1187, IV01_SPEED_FOC)
+- Speed control updates in real-time with 30-second polling
+
 ## 0.7.3 - Remove Redundant Timer Sensors (2026-01-04)
 
 ### Removed

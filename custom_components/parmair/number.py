@@ -20,6 +20,7 @@ from .const import (
     REG_FILTER_INTERVAL,
     REG_HOME_SPEED,
     REG_OVERPRESSURE_TIMER,
+    REG_SPEED_CONTROL,
     REG_SUMMER_MODE_TEMP_LIMIT,
     REG_SUPPLY_TEMP_SETPOINT,
 )
@@ -37,6 +38,7 @@ async def async_setup_entry(
     coordinator: ParmairCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities: list[NumberEntity] = [
+        ParmairManualSpeedNumber(coordinator, entry, REG_SPEED_CONTROL, "Manual Speed Control"),
         ParmairSpeedPresetNumber(coordinator, entry, REG_HOME_SPEED, "Home Speed Preset"),
         ParmairSpeedPresetNumber(coordinator, entry, REG_AWAY_SPEED, "Away Speed Preset"),
         ParmairSpeedPresetNumber(coordinator, entry, REG_BOOST_SETTING, "Boost Speed Preset"),
@@ -95,6 +97,33 @@ class ParmairNumberEntity(CoordinatorEntity[ParmairCoordinator], NumberEntity):
         except Exception as ex:
             _LOGGER.error("Failed to set %s to %s: %s", self._data_key, value, ex)
             raise
+
+
+class ParmairManualSpeedNumber(ParmairNumberEntity):
+    """Number entity for manual speed control (0-6: Auto, Stop, Speed 1-5)."""
+
+    _attr_mode = NumberMode.BOX
+    _attr_native_min_value = 0
+    _attr_native_max_value = 6
+    _attr_native_step = 1
+    _attr_icon = "mdi:fan-speed-1"
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        data_key: str,
+        name: str,
+    ) -> None:
+        """Initialize manual speed control number."""
+        super().__init__(coordinator, entry, data_key, name)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str]:
+        """Return speed mapping information."""
+        return {
+            "speed_map": "0=Auto, 1=Stop, 2=Speed 1, 3=Speed 2, 4=Speed 3, 5=Speed 4, 6=Speed 5"
+        }
 
 
 class ParmairSpeedPresetNumber(ParmairNumberEntity):
