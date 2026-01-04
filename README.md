@@ -1,4 +1,4 @@
-# Parmair MAC - Home Assistant Integration
+# Parmair MAC - Home Assistant Integration v0.3.2
 
 ![Parmair MAC Logo](parmair_logo.jpg)
 
