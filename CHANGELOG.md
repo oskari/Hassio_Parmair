@@ -1,3 +1,16 @@
+## 0.6.4 - Number Entity Bugfix (2026-01-04)
+
+### Fixed
+- Fixed TypeError: 'NoneType' object does not support item assignment in number.py
+- Moved interval_description attribute from ParmairTimerNumber to ParmairFilterIntervalNumber
+- Fixed extra_state_attributes to handle None return from parent class
+- Resolved 621+ error occurrences in Home Assistant logs
+
+### Technical
+- Changed `attrs = super().extra_state_attributes if hasattr(super(), 'extra_state_attributes') else {}` to `attrs = super().extra_state_attributes or {}`
+- Moved filter interval description logic to correct class (ParmairFilterIntervalNumber)
+- Removed incorrect extra_state_attributes from ParmairTimerNumber
+
 ## 0.6.3 - Documentation Security Update (2026-01-04)
 
 ### Changed

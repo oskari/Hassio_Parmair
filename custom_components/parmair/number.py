@@ -174,6 +174,16 @@ class ParmairFilterIntervalNumber(ParmairNumberEntity):
         """Initialize filter interval number."""
         super().__init__(coordinator, entry, data_key, name)
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional attributes."""
+        attrs = super().extra_state_attributes or {}
+        value = self.native_value
+        if value is not None:
+            interval_map = {0: "3 months", 1: "4 months", 2: "6 months"}
+            attrs["interval_description"] = interval_map.get(int(value), "Unknown")
+        return attrs
+
 
 class ParmairTimerNumber(ParmairNumberEntity):
     """Number entity for boost/overpressure timers (minutes)."""
@@ -196,13 +206,3 @@ class ParmairTimerNumber(ParmairNumberEntity):
         """Initialize timer number."""
         super().__init__(coordinator, entry, data_key, name)
         self._attr_icon = icon
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional attributes."""
-        attrs = super().extra_state_attributes if hasattr(super(), 'extra_state_attributes') else {}
-        value = self.native_value
-        if value is not None:
-            interval_map = {0: "3 months", 1: "4 months", 2: "6 months"}
-            attrs["interval_description"] = interval_map.get(int(value), "Unknown")
-        return attrs
