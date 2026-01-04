@@ -27,19 +27,25 @@ def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
 
 
 from .const import (
+    CONF_FIRMWARE_VERSION,
     CONF_MODEL,
     CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
+    DEFAULT_FIRMWARE,
     DEFAULT_MODEL,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SLAVE_ID,
     DOMAIN,
+    FIRMWARE_V1,
+    FIRMWARE_V2,
     MODEL_UNKNOWN,
     REG_HARDWARE_TYPE,
     REG_POWER,
+    REG_SOFTWARE_VERSION,
     SUPPORTED_MODELS,
+    detect_firmware_version,
     get_register_definition,
 )
 
@@ -81,11 +87,14 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         raise CannotConnect
     
     # Auto-detect hardware model by reading VENT_MACHINE register
-    def _detect_model():
-        """Detect hardware model from device."""
+    def _detect_model_and_firmware():
+        """Detect hardware model and firmware version from device."""
+        detected_model = DEFAULT_MODEL
+        detected_firmware = DEFAULT_FIRMWARE
+        
         try:
-            # Try to read hardware type register using same fallback pattern
-            hardware_reg = get_register_definition(DEFAULT_MODEL, REG_HARDWARE_TYPE)
+            # Read hardware type register
+            hardware_reg = get_register_definition(DEFAULT_MODEL, REG_HARDWARE_TYPE, DEFAULT_FIRMWARE)
             try:
                 result = client.read_holding_registers(
                     hardware_reg.address, 1, unit=data[CONF_SLAVE_ID]
@@ -119,7 +128,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             else:
                 hardware_type = result
             
-            # Format model based on VENT_MACHINE value (80 -> MAC80, 100 -> MAC100, 150 -> MAC150)
+            # Format model based on VENT_MACHINE value
             if hardware_type in (80, 100, 150):
                 detected_model = f"MAC{hardware_type}"
             else:
@@ -130,15 +139,52 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                 hardware_type,
                 detected_model,
             )
-            return detected_model
         except Exception as ex:
             _LOGGER.warning("Could not auto-detect model, using default: %s", ex)
-            return DEFAULT_MODEL
+        
+        # Try to read software version to determine firmware family
+        try:
+            sw_reg = get_register_definition(DEFAULT_MODEL, REG_SOFTWARE_VERSION, DEFAULT_FIRMWARE)
+            try:
+                result = client.read_holding_registers(
+                    sw_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                )
+            except TypeError:
+                try:
+                    result = client.read_holding_registers(
+                        sw_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                    )
+                except TypeError:
+                    _set_legacy_unit(client, data[CONF_SLAVE_ID])
+                    result = client.read_holding_registers(
+                        sw_reg.address, 1
+                    )
+            
+            # Extract and scale software version
+            if hasattr(result, "registers"):
+                raw_sw = result.registers[0]
+            elif isinstance(result, (list, tuple)):
+                raw_sw = result[0]
+            else:
+                raw_sw = result
+            
+            sw_version = raw_sw * sw_reg.scale
+            detected_firmware = detect_firmware_version(sw_version)
+            
+            _LOGGER.info(
+                "Auto-detected MULTI_SW_VER: %s, firmware: %s",
+                sw_version,
+                detected_firmware,
+            )
+        except Exception as ex:
+            _LOGGER.warning("Could not auto-detect firmware version, using default: %s", ex)
+        
+        return detected_model, detected_firmware
     
-    detected_model = await hass.async_add_executor_job(_detect_model)
+    detected_model, detected_firmware = await hass.async_add_executor_job(_detect_model_and_firmware)
     
     # Verify communication by reading a register with detected model
-    power_register = get_register_definition(detected_model, REG_POWER)
+    power_register = get_register_definition(detected_model, REG_POWER, detected_firmware)
     
     # Try to read a register to verify communication
     def _read_test():
@@ -179,7 +225,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     finally:
         client.close()
     
-    return {"title": data[CONF_NAME], "model": detected_model}
+    return {"title": data[CONF_NAME], "model": detected_model, "firmware_version": detected_firmware}
 
 
 class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -214,8 +260,9 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             try:
                 info = await validate_connection(self.hass, user_input)
-                # Add auto-detected model to the data
+                # Add auto-detected model and firmware version to the data
                 user_input[CONF_MODEL] = info["model"]
+                user_input[CONF_FIRMWARE_VERSION] = info["firmware_version"]
                 return self.async_create_entry(title=info["title"], data=user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"

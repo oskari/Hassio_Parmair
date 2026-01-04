@@ -1,3 +1,37 @@
+## 0.3.0 - Multi-Firmware Support (2026-01-04)
+
+### Added
+- **Multi-Firmware Architecture**: Support for different firmware versions (1.x and 2.x)
+  - Automatic firmware version detection from MULTI_SW_VER register
+  - Firmware-specific register mapping selection
+  - Firmware version displayed in Home Assistant as diagnostic sensor
+- **Firmware 2.x Placeholder**: Infrastructure for future firmware 2.x support
+  - Register map placeholder (currently mirrors 1.x)
+  - Will be updated when firmware 2.x Modbus specification becomes available
+- **Enhanced Detection**: During setup, integration now detects both:
+  - Hardware model (MAC80/100/150) from VENT_MACHINE register
+  - Firmware version (1.x/2.x) from MULTI_SW_VER register
+
+### Changed
+- **Register Map Structure**: Refactored to support multiple firmware versions
+  - Firmware-based register selection (primary)
+  - Model-based register selection (legacy support)
+- **Coordinator**: Now uses firmware version for register mapping
+- **Config Flow**: Detects and stores firmware version during initial setup
+- **Software Version Sensor**: Now actively used for firmware version detection
+
+### Technical
+- Added `CONF_FIRMWARE_VERSION` configuration key
+- Added `detect_firmware_version()` helper function
+- Added `get_registers_for_firmware()` function
+- Register definitions now organized by firmware version
+- Coordinator logs firmware version changes and suggests reconfiguration
+
+### Notes
+- **Firmware 1.x users**: No changes needed, continues to work as before
+- **Firmware 2.x users**: Currently uses 1.x register map as fallback
+- **Future**: Firmware 2.x register map will be updated when specification is available
+
 ## 0.2.5 - Critical Fixes & UX Improvements (2026-01-03)
 
 ### Fixed

@@ -10,6 +10,7 @@ DOMAIN = "parmair"
 # Configuration
 CONF_SLAVE_ID = "slave_id"
 CONF_MODEL = "model"
+CONF_FIRMWARE_VERSION = "firmware_version"
 CONF_SCAN_INTERVAL = "scan_interval"
 
 DEFAULT_NAME = "Parmair MAC"
@@ -23,6 +24,11 @@ MODEL_MAC100 = "MAC100"
 MODEL_MAC150 = "MAC150"
 MODEL_UNKNOWN = "Unknown"
 DEFAULT_MODEL = MODEL_MAC80
+
+# Firmware versions (based on MULTI_SW_VER register)
+FIRMWARE_V1 = "1.x"  # Firmware 1.xx (Modbus spec 1.87)
+FIRMWARE_V2 = "2.x"  # Firmware 2.xx (Modbus spec 2.x - placeholder)
+DEFAULT_FIRMWARE = FIRMWARE_V1
 
 # Hardware type code to model mapping (from VENT_MACHINE register)
 HARDWARE_TYPE_MAP = {
@@ -100,8 +106,8 @@ REG_EXHAUST_FAN_SPEED = "exhaust_fan_speed"
 REG_FILTER_STATE = "filter_state"
 
 
-def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
-    """Return register map for the MAC80 firmware."""
+def _build_v1_registers() -> Dict[str, RegisterDefinition]:
+    """Return register map for firmware version 1.xx (Modbus spec 1.87)."""
 
     return {
         REG_HARDWARE_TYPE: RegisterDefinition(REG_HARDWARE_TYPE, 1244, "VENT_MACHINE"),
@@ -216,10 +222,33 @@ def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
     }
 
 
-MAC80_REGISTERS = _build_mac80_registers()
-# MAC100 and MAC150 currently mirror MAC80 until official register sheets are available.
-MAC100_REGISTERS = dict(MAC80_REGISTERS)
-MAC150_REGISTERS = dict(MAC80_REGISTERS)
+def _build_v2_registers() -> Dict[str, RegisterDefinition]:
+    """Return register map for firmware version 2.xx (Modbus spec 2.x - PLACEHOLDER).
+    
+    Note: This is a placeholder for future firmware 2.x support.
+    Register mappings may differ from v1.x and will be updated when
+    the Modbus specification for firmware 2.x becomes available.
+    
+    Currently mirrors v1.x registers as a fallback.
+    """
+    # TODO: Update with actual v2.x register mappings when specification is available
+    return _build_v1_registers()
+
+
+# Build register maps for each firmware version
+V1_REGISTERS = _build_v1_registers()
+V2_REGISTERS = _build_v2_registers()
+
+# Firmware version to register map
+FIRMWARE_REGISTER_MAP: Dict[str, Dict[str, RegisterDefinition]] = {
+    FIRMWARE_V1: V1_REGISTERS,
+    FIRMWARE_V2: V2_REGISTERS,
+}
+
+# Legacy: Keep model-based maps for backward compatibility
+MAC80_REGISTERS = V1_REGISTERS
+MAC100_REGISTERS = V1_REGISTERS
+MAC150_REGISTERS = V1_REGISTERS
 
 REGISTER_MAP: Dict[str, Dict[str, RegisterDefinition]] = {
     MODEL_MAC80: MAC80_REGISTERS,
@@ -228,6 +257,7 @@ REGISTER_MAP: Dict[str, Dict[str, RegisterDefinition]] = {
 }
 
 SUPPORTED_MODELS = tuple(REGISTER_MAP.keys())
+SUPPORTED_FIRMWARES = tuple(FIRMWARE_REGISTER_MAP.keys())
 
 # Ordered list of registers to poll on each update.
 POLLING_REGISTER_KEYS = (
@@ -262,17 +292,60 @@ POLLING_REGISTER_KEYS = (
 
 
 def get_registers_for_model(model: str) -> Dict[str, RegisterDefinition]:
-    """Return the register map for the requested model."""
+    """Return the register map for the requested model (legacy, uses v1)."""
 
     return REGISTER_MAP.get(model, REGISTER_MAP[DEFAULT_MODEL])
 
 
-def get_register_definition(model: str, key: str) -> RegisterDefinition:
-    """Return the register definition for a given model and key."""
+def get_registers_for_firmware(firmware_version: str) -> Dict[str, RegisterDefinition]:
+    """Return the register map for the requested firmware version."""
 
-    registers = get_registers_for_model(model)
+    # Determine firmware family (1.x or 2.x) from version string
+    if firmware_version:
+        try:
+            major_version = int(float(firmware_version))
+            if major_version >= 2:
+                return FIRMWARE_REGISTER_MAP.get(FIRMWARE_V2, V1_REGISTERS)
+        except (ValueError, TypeError):
+            pass
+    
+    return FIRMWARE_REGISTER_MAP.get(FIRMWARE_V1, V1_REGISTERS)
+
+
+def detect_firmware_version(sw_version_value: float) -> str:
+    """Detect firmware family from MULTI_SW_VER register value.
+    
+    Args:
+        sw_version_value: Raw value from MULTI_SW_VER register (e.g., 1.87, 2.15)
+    
+    Returns:
+        Firmware version identifier (FIRMWARE_V1 or FIRMWARE_V2)
+    """
+    if sw_version_value and sw_version_value >= 2.0:
+        return FIRMWARE_V2
+    return FIRMWARE_V1
+
+
+def get_register_definition(model: str, key: str, firmware_version: str = None, firmware_version: str = None) -> RegisterDefinition:
+    """Return the register definition for a given model/firmware and key.
+    
+    Args:
+        model: Hardware model (MAC80, MAC100, MAC150) - used for legacy support
+        key: Register key to look up
+        firmware_version: Firmware version string (e.g., FIRMWARE_V1, FIRMWARE_V2)
+    
+    Returns:
+        RegisterDefinition for the requested register
+    """
+    # Prefer firmware-based lookup if provided
+    if firmware_version:
+        registers = get_registers_for_firmware(firmware_version)
+    else:
+        # Fall back to model-based lookup (legacy)
+        registers = get_registers_for_model(model)
+    
     if key not in registers:
-        raise KeyError(f"Register '{key}' not defined for model '{model}'")
+        raise KeyError(f"Register '{key}' not defined for model '{model}' firmware '{firmware_version}'")
     return registers[key]
 
 

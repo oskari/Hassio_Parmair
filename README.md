@@ -39,11 +39,14 @@ A custom Home Assistant integration for Parmair MAC ventilation systems via Modb
   - Register metadata exposed via entity attributes for diagnostics
   
 - **Local Polling**: Direct communication with your device via Modbus TCP
-- **Automatic Model Detection**: Reads hardware type register to identify MAC80/MAC150 automatically
+- **Automatic Model Detection**: Reads hardware type register to identify MAC80/MAC100/MAC150 automatically
+- **Firmware Version Detection**: Automatically detects firmware version (1.x or 2.x) for optimal register mapping
 
 ## System Information
 
-This integration targets Parmair "My Air Control" firmware V1.87 behaviour observed on production units.
+This integration supports Parmair "My Air Control" systems:
+- **Firmware 1.x**: Fully supported (Modbus spec 1.87)
+- **Firmware 2.x**: Infrastructure ready (register mappings will be added when specification available)
 
 ## Installation
 
@@ -76,7 +79,7 @@ The integration is configured through the Home Assistant UI. You'll need:
 - **Port**: The Modbus TCP port (typically 502)
 - **Slave ID**: The Modbus slave ID of your device (typically 1)
 
-The hardware model (MAC80/MAC150) is automatically detected by reading the VENT_MACHINE register.
+The hardware model (MAC80/MAC100/MAC150) and firmware version (1.x/2.x) are automatically detected by reading the VENT_MACHINE and MULTI_SW_VER registers.
 
 ## Entities Created
 
@@ -103,10 +106,10 @@ The hardware model (MAC80/MAC150) is automatically detected by reading the VENT_
 - **Exhaust Air Temperature**: Air temperature being extracted
 - **Waste Air Temperature**: Air temperature being exhausted outside
 - **Exhaust/Supply Temperature Setpoints**: Target temperatures
-- **Control State**: Current operating mode
-- **Power State**: Power status (0=Off, 3=Running)
-- **Home/Away State**: Whether system is in home or away mode
-- **Boost State**: Whether boost mode is active
+- **Control State**: Current operating mode (Stop, Away, Home, Boost, etc.)
+- **Power State**: Power status (Off, Shutting Down, Starting, Running)
+- **Home/Away State**: Whether system is in home or away mode (Home/Away)
+- **Boost State**: Whether boost mode is active (On/Off)
 - **Boost Timer**: Remaining boost time in minutes
 - **Alarm Count**: Number of active alarms
 - **Summary Alarm**: Overall alarm status
@@ -117,7 +120,8 @@ Optional sensors (if hardware is present):
 - Entity attributes include the selected model plus register id, address, and scaling to aid troubleshooting
 
 Diagnostic sensors:
-- **Software Version**: Multi24 firmware application version
+- **Software Version**: Multi24 firmware application version (used for firmware family detection)
+- **Firmware Family**: Automatically detected as 1.x or 2.x based on software version
 
 ## Modbus Registers
 
@@ -149,18 +153,20 @@ This integration follows Home Assistant's development guidelines and uses:
 ## Support
 
 For issues, feature requests, or questions, please open an issue on GitHub.
-4
-- **Software Version Sensor**: Monitor Multi24 firmware application version
-- **Diagnostic Entity**: Automatically polled firmware version display (e.g., 2.00)
-- **System Monitoring**: Helps identify firmware-related issues and compatibility
 
-### 0.2.
 ## Release Notes
+
 ### 0.2.5
 - **CRITICAL FIX**: Negative temperature handling - temperatures below 0°C now display correctly
 - **Human-Readable States**: All state sensors now show meaningful text (Home/Away, On/Off, etc.)
 - **Missing Hardware**: CO2/Humidity sensors display "Not Installed" when hardware is absent
 - **Software Version**: Corrected register address for proper firmware version display
+
+### 0.2.4
+- **Software Version Sensor**: Monitor Multi24 firmware application version
+- **Diagnostic Entity**: Automatically polled firmware version display (e.g., 2.00)
+- **System Monitoring**: Helps identify firmware-related issues and compatibility
+
 ### 0.2.3
 - **Button Platform**: Acknowledge Alarms, Filter Replaced buttons
 - **Select Platform**: Heater Type selector (Water/Electric)

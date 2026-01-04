@@ -15,16 +15,19 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.config_entries import ConfigEntry
 
 from .const import (
+    CONF_FIRMWARE_VERSION,
     CONF_MODEL,
     CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
+    DEFAULT_FIRMWARE,
     DEFAULT_MODEL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     POLLING_REGISTER_KEYS,
     RegisterDefinition,
+    detect_firmware_version,
     get_register_definition,
-    get_registers_for_model,
+    get_registers_for_firmware,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,8 +54,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.port = entry.data[CONF_PORT]
         self.slave_id = entry.data[CONF_SLAVE_ID]
         self.model = entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+        self.firmware_version = entry.data.get(CONF_FIRMWARE_VERSION, DEFAULT_FIRMWARE)
         scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-        self._registers = get_registers_for_model(self.model)
+        self._registers = get_registers_for_firmware(self.firmware_version)
         self._poll_registers: list[RegisterDefinition] = [
             self._registers[key]
             for key in POLLING_REGISTER_KEYS
@@ -92,7 +96,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Ensure slave_id is set on the client for legacy pymodbus
             _set_legacy_unit(self._client, self.slave_id)
             
-            data: dict[str, Any] = {"model": self.model}
+            data: dict[str, Any] = {"model": self.model, "firmware_version": self.firmware_version}
             failed_registers = []
 
             try:
@@ -102,6 +106,19 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         failed_registers.append(f"{definition.label}({definition.register_id})")
                         continue
                     data[definition.key] = value
+                
+                # Check if we need to update firmware version detection
+                if "software_version" in data and data["software_version"]:
+                    detected_fw = detect_firmware_version(data["software_version"])
+                    if detected_fw != self.firmware_version:
+                        _LOGGER.info(
+                            "Firmware version changed from %s to %s (SW Ver: %s). "
+                            "Please reconfigure integration for optimal register mapping.",
+                            self.firmware_version,
+                            detected_fw,
+                            data["software_version"]
+                        )
+                        data["firmware_version"] = detected_fw
 
                 if failed_registers:
                     _LOGGER.debug(
@@ -186,7 +203,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def get_register_definition(self, key: str) -> RegisterDefinition:
         """Expose register metadata for other components."""
 
-        return get_register_definition(self.model, key)
+        return get_register_definition(self.model, key, self.firmware_version)
 
     def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
         """Read and scale a single register."""
