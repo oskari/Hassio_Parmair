@@ -27,25 +27,14 @@ def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
 
 
 from .const import (
-    CONF_FIRMWARE_VERSION,
-    CONF_MODEL,
     CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
-    DEFAULT_FIRMWARE,
-    DEFAULT_MODEL,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SLAVE_ID,
     DOMAIN,
-    FIRMWARE_V1,
-    FIRMWARE_V2,
-    MODEL_UNKNOWN,
-    REG_HARDWARE_TYPE,
     REG_POWER,
-    REG_SOFTWARE_VERSION,
-    SUPPORTED_MODELS,
-    detect_firmware_version,
     get_register_definition,
 )
 
@@ -225,7 +214,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     finally:
         client.close()
     
-    return {"title": data[CONF_NAME], "model": detected_model, "firmware_version": detected_firmware}
+    return {"title": data[CONF_NAME]}
 
 
 class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -260,9 +249,6 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             try:
                 info = await validate_connection(self.hass, user_input)
-                # Add auto-detected model and firmware version to the data
-                user_input[CONF_MODEL] = info["model"]
-                user_input[CONF_FIRMWARE_VERSION] = info["firmware_version"]
                 return self.async_create_entry(title=info["title"], data=user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
@@ -276,7 +262,5 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "version": self._integration_version or "unknown",
-                "model": info.get("model", "MAC") if user_input and not errors else "MAC",
-                "firmware": info.get("firmware_version", FIRMWARE_V1) if user_input and not errors else FIRMWARE_V1,
             },
         )

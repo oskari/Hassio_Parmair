@@ -1,3 +1,27 @@
+## 0.6.0 - Simplified Architecture (2026-01-04)
+
+### Changed
+- **BREAKING**: Removed hardware/firmware version detection and constants
+- Simplified codebase to use single register map (all MAC models use same registers)
+- Removed `CONF_MODEL` and `CONF_FIRMWARE_VERSION` from configuration
+- Removed firmware version constants (`FIRMWARE_V1`, `FIRMWARE_V2`, etc.)
+- Removed model constants (`MODEL_MAC80`, `MODEL_MAC100`, `MODEL_MAC150`)
+- Removed hardware type mapping and model-based register maps
+- Simplified `get_register_definition()` to only take key parameter
+- Device info now shows generic "MAC" model
+- Config flow no longer detects hardware type or firmware version
+
+### Technical
+- Renamed `_build_v1_registers()` to `_build_registers()`
+- Replaced multiple register maps with single `REGISTERS` map
+- Removed firmware version change detection from coordinator
+- Reduced code complexity and maintenance burden
+
+### Rationale
+- All MAC models use identical Modbus register mappings per CSV specification
+- Hardware/firmware detection was unnecessary complexity
+- Simpler codebase is more maintainable and reliable
+
 ## 0.5.3 - Firmware Version Sensor Fix (2026-01-04)
 
 ### Fixed
