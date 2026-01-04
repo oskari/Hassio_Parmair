@@ -1,3 +1,9 @@
+## 0.5.1 - Transaction ID Fix (2026-01-04)
+
+### Fixed
+- Fixed pymodbus transaction ID mismatch errors by adding 10ms delay between register reads
+- Prevents "request ask for transaction_id=X but got id=Y" errors in logs
+
 ## 0.5.0 - Device Info Enhancement (2026-01-04)
 
 ### Changed

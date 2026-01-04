@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -107,6 +108,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         failed_registers.append(f"{definition.label}({definition.register_id})")
                         continue
                     data[definition.key] = value
+                    # Small delay between reads to prevent transaction ID conflicts
+                    time.sleep(0.01)
                 
                 # Always include firmware version in data for sensors
                 data["firmware_version"] = self.firmware_version
