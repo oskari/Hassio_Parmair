@@ -221,10 +221,16 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
         
         if sw_version is not None:
-            device_info["sw_version"] = f"{sw_version:.2f}"
+            if isinstance(sw_version, (int, float)):
+                device_info["sw_version"] = f"{sw_version:.2f}"
+            else:
+                device_info["sw_version"] = str(sw_version)
         
         if fw_version is not None:
-            device_info["hw_version"] = f"FW {fw_version:.2f}"
+            if isinstance(fw_version, (int, float)):
+                device_info["hw_version"] = f"FW {fw_version:.2f}"
+            else:
+                device_info["hw_version"] = f"FW {fw_version}"
         
         return device_info
 

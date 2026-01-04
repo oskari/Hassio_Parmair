@@ -1,3 +1,9 @@
+## 0.5.2 - Device Info Type Fix (2026-01-04)
+
+### Fixed
+- Fixed "Unknown format code 'f' for object of type 'str'" error in device_info
+- Added type checking for software and firmware version formatting
+
 ## 0.5.1 - Transaction ID Fix (2026-01-04)
 
 ### Fixed
