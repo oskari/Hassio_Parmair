@@ -1,3 +1,17 @@
+## 0.7.4.1 - Fix Pymodbus Compatibility and Auto-Detection (2026-01-04)
+
+### Fixed
+- **Pymodbus compatibility** - Now tries keyword arguments first (address=, count=, slave=)
+- **Auto-detection working** - Fixed "ModbusClientMixin.read_holding_registers() takes 2 positional arguments but 3 were given" error
+- **Software version detection** - Now correctly detects software version during setup
+- **Heater type detection** - Now correctly detects heater type during setup
+- **Transaction ID conflicts** - Increased inter-register read delay from 20ms to 50ms to reduce transaction ID mismatch errors
+
+### Technical
+- Updated config_flow.py to try keyword arguments before positional
+- Updated coordinator.py read method with better pymodbus version compatibility
+- Improved timing to prevent buffer conflicts
+
 ## 0.7.4 - Add Speed Control Sensor and Manual Speed Control (2026-01-04)
 
 ### Added

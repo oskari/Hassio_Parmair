@@ -96,19 +96,32 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         try:
             sw_reg = get_register_definition(REG_SOFTWARE_VERSION)
             try:
+                # Try modern pymodbus with keyword arguments
                 result = client.read_holding_registers(
-                    sw_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                    address=sw_reg.address, count=1, slave=data[CONF_SLAVE_ID]
                 )
             except TypeError:
                 try:
+                    # Try with 'unit' instead of 'slave'
                     result = client.read_holding_registers(
-                        sw_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                        address=sw_reg.address, count=1, unit=data[CONF_SLAVE_ID]
                     )
                 except TypeError:
-                    _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                    result = client.read_holding_registers(
-                        sw_reg.address, 1
-                    )
+                    # Try older versions with positional + keyword
+                    try:
+                        result = client.read_holding_registers(
+                            sw_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                        )
+                    except TypeError:
+                        try:
+                            result = client.read_holding_registers(
+                                sw_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                            )
+                        except TypeError:
+                            _set_legacy_unit(client, data[CONF_SLAVE_ID])
+                            result = client.read_holding_registers(
+                                sw_reg.address, 1
+                            )
             
             # Extract and scale software version
             if hasattr(result, "registers"):
@@ -140,19 +153,32 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         try:
             heater_reg = get_register_definition(REG_HEATER_TYPE)
             try:
+                # Try modern pymodbus with keyword arguments
                 result = client.read_holding_registers(
-                    heater_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                    address=heater_reg.address, count=1, slave=data[CONF_SLAVE_ID]
                 )
             except TypeError:
                 try:
+                    # Try with 'unit' instead of 'slave'
                     result = client.read_holding_registers(
-                        heater_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                        address=heater_reg.address, count=1, unit=data[CONF_SLAVE_ID]
                     )
                 except TypeError:
-                    _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                    result = client.read_holding_registers(
-                        heater_reg.address, 1
-                    )
+                    # Try older versions with positional + keyword
+                    try:
+                        result = client.read_holding_registers(
+                            heater_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                        )
+                    except TypeError:
+                        try:
+                            result = client.read_holding_registers(
+                                heater_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                            )
+                        except TypeError:
+                            _set_legacy_unit(client, data[CONF_SLAVE_ID])
+                            result = client.read_holding_registers(
+                                heater_reg.address, 1
+                            )
             
             # Extract heater type value
             if hasattr(result, "registers"):

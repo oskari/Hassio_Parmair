@@ -117,7 +117,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         continue
                     data[definition.key] = value
                     # Delay between reads to prevent transaction ID conflicts
-                    time.sleep(0.02)
+                    time.sleep(0.05)
                 
                 if failed_registers:
                     _LOGGER.debug(
@@ -226,29 +226,42 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Read and scale a single register."""
 
         try:
+            # Try modern pymodbus with keyword arguments first
             result = self._client.read_holding_registers(
-                definition.address, 1, unit=self.slave_id
+                address=definition.address, count=1, slave=self.slave_id
             )
         except TypeError:
             try:
+                # Try with 'unit' instead of 'slave'
                 result = self._client.read_holding_registers(
-                    definition.address, 1, slave=self.slave_id
+                    address=definition.address, count=1, unit=self.slave_id
                 )
             except TypeError:
+                # Try older versions with positional + keyword
                 try:
                     result = self._client.read_holding_registers(
-                        definition.address, 1, device_id=self.slave_id
+                        definition.address, 1, unit=self.slave_id
                     )
                 except TypeError:
-                    _set_legacy_unit(self._client, self.slave_id)
                     try:
                         result = self._client.read_holding_registers(
-                            definition.address, 1
+                            definition.address, 1, slave=self.slave_id
                         )
                     except TypeError:
-                        result = self._client.read_holding_registers(
-                            definition.address
-                        )
+                        try:
+                            result = self._client.read_holding_registers(
+                                definition.address, 1, device_id=self.slave_id
+                            )
+                        except TypeError:
+                            _set_legacy_unit(self._client, self.slave_id)
+                            try:
+                                result = self._client.read_holding_registers(
+                                    definition.address, 1
+                                )
+                            except TypeError:
+                                result = self._client.read_holding_registers(
+                                    definition.address
+                                )
         if not result or (hasattr(result, "isError") and result.isError()):
             _LOGGER.warning(
                 "Failed reading register %s (%s) at address %d",
