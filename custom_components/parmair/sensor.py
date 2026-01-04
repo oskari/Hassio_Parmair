@@ -57,8 +57,6 @@ async def async_setup_entry(
         ParmairPowerStateSensor(coordinator, entry, "power", "Power State"),
         ParmairBinarySensor(coordinator, entry, "home_state", "Home/Away State", {0: "Away", 1: "Home"}),
         ParmairBinarySensor(coordinator, entry, "boost_state", "Boost State", {0: "Off", 1: "On"}),
-        ParmairTimerSensor(coordinator, entry, "boost_timer", "Boost Timer"),
-        ParmairTimerSensor(coordinator, entry, "overpressure_timer", "Overpressure Timer"),
         ParmairAlarmSensor(coordinator, entry, "alarm_count", "Alarm Count"),
         ParmairAlarmSensor(coordinator, entry, "sum_alarm", "Summary Alarm"),
         
@@ -272,29 +270,6 @@ class ParmairStateSensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair state sensor."""
 
     _attr_has_entity_name = True
-
-    def __init__(
-        self,
-        coordinator: ParmairCoordinator,
-        entry: ConfigEntry,
-        data_key: str,
-        name: str,
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator, entry, data_key, name)
-
-    @property
-    def native_value(self) -> int | None:
-        """Return the sensor value."""
-        return self.coordinator.data.get(self._data_key)
-
-
-class ParmairTimerSensor(ParmairRegisterEntity, SensorEntity):
-    """Representation of a Parmair timer sensor."""
-
-    _attr_has_entity_name = True
-    _attr_device_class = SensorDeviceClass.DURATION
-    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
 
     def __init__(
         self,

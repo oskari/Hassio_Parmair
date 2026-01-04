@@ -1,3 +1,20 @@
+## 0.7.3 - Remove Redundant Timer Sensors (2026-01-04)
+
+### Removed
+- Removed separate Boost Timer sensor entity
+- Removed separate Overpressure Timer sensor entity
+- Removed ParmairTimerSensor class (no longer needed)
+
+### Changed
+- Timer information now only shown as attributes on Boost/Overpressure switches
+- Boost Mode switch shows: preset_duration, preset_speed, remaining_time
+- Overpressure Mode switch shows: preset_duration, remaining_time
+
+### Technical
+- Reduced entity count by removing duplicate timer displays
+- Timer data still available via switch extra_state_attributes
+- Cleaner entity list with less redundancy
+
 ## 0.7.2.1 - Fix Optional Sensor ValueError (2026-01-04)
 
 ### Fixed
