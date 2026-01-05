@@ -57,6 +57,7 @@ REG_HARDWARE_TYPE = "hardware_type"
 REG_SOFTWARE_VERSION = "software_version"
 REG_POWER = "power"
 REG_CONTROL_STATE = "control_state"
+REG_ACTUAL_SPEED = "actual_speed"
 REG_SPEED_CONTROL = "speed_control"
 REG_FRESH_AIR_TEMP = "fresh_air_temp"
 REG_SUPPLY_AFTER_RECOVERY_TEMP = "supply_after_recovery_temp"
@@ -127,6 +128,9 @@ def _build_registers_v1() -> Dict[str, RegisterDefinition]:
         REG_POWER: RegisterDefinition(REG_POWER, 1208, "POWER_BTN_FI", writable=True),
         REG_CONTROL_STATE: RegisterDefinition(
             REG_CONTROL_STATE, 1185, "IV01_CONTROLSTATE_FO", writable=True
+        ),
+        REG_ACTUAL_SPEED: RegisterDefinition(
+            REG_ACTUAL_SPEED, 1186, "IV01_SPEED_FO"
         ),
         REG_SPEED_CONTROL: RegisterDefinition(
             REG_SPEED_CONTROL, 1187, "IV01_SPEED_FOC", writable=True
@@ -304,6 +308,7 @@ POLLING_REGISTER_KEYS = (
     REG_HEATER_TYPE,
     REG_POWER,
     REG_CONTROL_STATE,
+    REG_ACTUAL_SPEED,
     REG_SPEED_CONTROL,
     REG_FRESH_AIR_TEMP,
     REG_SUPPLY_AFTER_RECOVERY_TEMP,

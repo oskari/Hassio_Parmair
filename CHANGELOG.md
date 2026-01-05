@@ -1,3 +1,25 @@
+## 0.7.6 - Use Real Speed Sensor (2026-01-05)
+
+### Changed
+- **Speed sensor now shows actual running speed** - Changed from control setting to real speed
+- Renamed "Speed Control" sensor to "Current Speed"
+- Sensor now reads from register 1186 (IV01_SPEED_FO) instead of 1187 (IV01_SPEED_FOC)
+- Removed "Auto" from speed options (actual speed doesn't have auto mode)
+- Speed values: Stop, Speed 1, Speed 2, Speed 3, Speed 4, Speed 5
+
+### Technical
+- Added REG_ACTUAL_SPEED constant (register 1186, IV01_SPEED_FO, read-only)
+- REG_SPEED_CONTROL (register 1187) still used for Manual Speed Control number entity
+- Updated ParmairSpeedControlSensor to use actual_speed data key
+- Updated STATE_MAP to values 0-5 (Stop, Speed 1-5)
+- Added REG_ACTUAL_SPEED to polling registers
+
+### What Changed
+**Before:** Speed Control sensor showed the *control setting* (Auto/Stop/Speed 1-5) from register 1187
+**After:** Current Speed sensor shows the *actual running speed* (Stop/Speed 1-5) from register 1186
+
+**Manual Speed Control number entity** still uses register 1187 for setting the desired speed.
+
 ## 0.7.5.1 - Remove Heater Type Control (2026-01-05)
 
 ### Removed

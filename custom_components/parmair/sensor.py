@@ -55,7 +55,7 @@ async def async_setup_entry(
         
         # Other sensors
         ParmairControlStateSensor(coordinator, entry, "control_state", "Control State"),
-        ParmairSpeedControlSensor(coordinator, entry, "speed_control", "Speed Control"),
+        ParmairSpeedControlSensor(coordinator, entry, "actual_speed", "Current Speed"),
         ParmairPowerStateSensor(coordinator, entry, "power", "Power State"),
         ParmairBinarySensor(coordinator, entry, "home_state", "Home/Away State", {0: "Away", 1: "Home"}),
         ParmairBinarySensor(coordinator, entry, "boost_state", "Boost State", {0: "Off", 1: "On"}),
@@ -398,20 +398,19 @@ class ParmairControlStateSensor(ParmairRegisterEntity, SensorEntity):
 
 
 class ParmairSpeedControlSensor(ParmairRegisterEntity, SensorEntity):
-    """Representation of speed control with mapped values."""
+    """Representation of actual running speed with mapped values."""
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = ["Auto", "Stop", "Speed 1", "Speed 2", "Speed 3", "Speed 4", "Speed 5"]
+    _attr_options = ["Stop", "Speed 1", "Speed 2", "Speed 3", "Speed 4", "Speed 5"]
 
     STATE_MAP = {
-        0: "Auto",
-        1: "Stop",
-        2: "Speed 1",
-        3: "Speed 2",
-        4: "Speed 3",
-        5: "Speed 4",
-        6: "Speed 5"
+        0: "Stop",
+        1: "Speed 1",
+        2: "Speed 2",
+        3: "Speed 3",
+        4: "Speed 4",
+        5: "Speed 5"
     }
 
     def __init__(
