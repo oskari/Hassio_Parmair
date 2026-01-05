@@ -1,3 +1,22 @@
+## 0.7.7.2 - Documentation Cleanup (2026-01-05)
+
+### Changed
+- **Removed Modbus register addresses from all public documentation**
+- Cleaned up CHANGELOG.md to remove technical register numbers
+- README.md already clean (no register addresses)
+- Register addresses remain in const.py for technical reference
+
+### Rationale
+- User-facing documentation should be clean and non-technical
+- Register addresses are implementation details
+- Improves readability for end users
+- Technical details preserved in code comments
+
+### Technical
+- No code changes
+- Documentation-only update
+- Register addresses still defined in const.py
+
 ## 0.7.7.1 - Make Current Speed Sensor Numeric (2026-01-05)
 
 ### Changed
@@ -44,22 +63,22 @@
 ### Changed
 - **Speed sensor now shows actual running speed** - Changed from control setting to real speed
 - Renamed "Speed Control" sensor to "Current Speed"
-- Sensor now reads from register 1186 (IV01_SPEED_FO) instead of 1187 (IV01_SPEED_FOC)
+- Sensor now reads from actual speed register instead of control register
 - Removed "Auto" from speed options (actual speed doesn't have auto mode)
 - Speed values: Stop, Speed 1, Speed 2, Speed 3, Speed 4, Speed 5
 
 ### Technical
-- Added REG_ACTUAL_SPEED constant (register 1186, IV01_SPEED_FO, read-only)
-- REG_SPEED_CONTROL (register 1187) still used for Manual Speed Control number entity
+- Added REG_ACTUAL_SPEED constant for actual speed monitoring
+- REG_SPEED_CONTROL still used for Manual Speed Control number entity
 - Updated ParmairSpeedControlSensor to use actual_speed data key
 - Updated STATE_MAP to values 0-5 (Stop, Speed 1-5)
 - Added REG_ACTUAL_SPEED to polling registers
 
 ### What Changed
-**Before:** Speed Control sensor showed the *control setting* (Auto/Stop/Speed 1-5) from register 1187
-**After:** Current Speed sensor shows the *actual running speed* (Stop/Speed 1-5) from register 1186
+**Before:** Speed Control sensor showed the *control setting* (Auto/Stop/Speed 1-5)
+**After:** Current Speed sensor shows the *actual running speed* (Stop/Speed 1-5)
 
-**Manual Speed Control number entity** still uses register 1187 for setting the desired speed.
+**Manual Speed Control number entity** still uses control register for setting the desired speed.
 
 ## 0.7.5.1 - Remove Heater Type Control (2026-01-05)
 
@@ -69,7 +88,7 @@
 
 ### Kept
 - **Heater Type diagnostic sensor** - Still shows current heater configuration (read-only)
-- Sensor continues to display Water/Electric/None from register 1240
+- Sensor continues to display Water/Electric/None
 
 ### Technical
 - Removed ParmairHeaterTypeSelect class from select.py
@@ -92,8 +111,8 @@
 
 ### Technical
 - Added ParmairHeaterTypeSensor class with ENUM device class
-- Updated HEATER_TYPE constants to match HEAT_RADIATOR_TYPE register documentation
-- Heater type values now correctly reflect hardware configuration from register 1240
+- Updated HEATER_TYPE constants to match hardware documentation
+- Heater type values now correctly reflect hardware configuration
 - Sensor marked as EntityCategory.DIAGNOSTIC
 
 ## 0.7.4.3 - Fix Auto-Detection During Configuration (2026-01-05)
@@ -120,7 +139,7 @@
 
 ### Fixed
 - **Device model now shows MAC type** - Shows "MAC 80", "MAC 100", or "MAC 150" based on hardware type
-- **Added hardware type polling** - Reads VENT_MACHINE register (1244) to determine MAC model
+- **Added hardware type polling** - Reads hardware type to determine MAC model
 - Device info now displays correct model information in Home Assistant
 
 ### Technical
@@ -155,7 +174,7 @@
 ### Technical
 - Added ParmairSpeedControlSensor class (enum sensor with 7 states)
 - Added ParmairManualSpeedNumber class (number entity 0-6)
-- Reads/writes REG_SPEED_CONTROL (register 1187, IV01_SPEED_FOC)
+- Reads/writes speed control register
 - Speed control updates in real-time with 30-second polling
 
 ## 0.7.3 - Remove Redundant Timer Sensors (2026-01-04)
@@ -200,7 +219,7 @@
 
 ### Technical
 - Added REG_BOOST_TIMER and REG_OVERPRESSURE_TIMER to switch.py imports
-- Reads BOOST_TIMER_FM (register 1202) and OVERP_TIMER_FM (register 1204)
+- Reads timer registers for boost and overpressure modes
 - Displays remaining time only when timer > 0 (mode is active)
 
 ## 0.7.1 - Fix Config Flow Import Error (2026-01-04)
@@ -252,8 +271,8 @@
 - Summer Mode switch now shows temperature_limit
 
 ### Technical
-- Added REG_BOOST_TIME_SETTING register (1106, BOOST_TIME_S)
-- Added REG_OVERPRESSURE_TIME_SETTING register (1107, OVERP_TIME_S)
+- Added REG_BOOST_TIME_SETTING for boost time presets
+- Added REG_OVERPRESSURE_TIME_SETTING for overpressure time presets
 - Added REG_SUMMER_MODE_TEMP_LIMIT to predefined settings section
 - Added extra_state_attributes methods to switch entities
 - Added new registers to polling list for real-time display
@@ -274,7 +293,7 @@
 - Simplified device_info property in coordinator
 
 ### Technical
-- Removed MULTI_FW_VER register (1017) from code
+- Removed firmware version register from code
 - Removed ParmairFirmwareFamilySensor class
 - Removed fw_version references from coordinator.device_info
 - Reduced number of registers polled per cycle
