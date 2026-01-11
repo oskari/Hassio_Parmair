@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -87,7 +87,8 @@ class ParmairNumberEntity(CoordinatorEntity[ParmairCoordinator], NumberEntity):
     @property
     def native_value(self) -> float | None:
         """Return the current value."""
-        return self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self._data_key)
+        return float(value) if value is not None else None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
@@ -144,7 +145,7 @@ class ParmairSpeedPresetNumber(ParmairNumberEntity):
     ) -> None:
         """Initialize speed preset number."""
         super().__init__(coordinator, entry, data_key, name)
-        
+
         # Adjust boost setting range (2-4 per documentation)
         if data_key == REG_BOOST_SETTING:
             self._attr_native_min_value = 2
@@ -155,7 +156,7 @@ class ParmairTemperatureSetpointNumber(ParmairNumberEntity):
 
     _attr_mode = NumberMode.BOX
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    _attr_device_class = "temperature"
+    _attr_device_class = NumberDeviceClass.TEMPERATURE
     _attr_icon = "mdi:thermometer"
 
     def __init__(
@@ -167,7 +168,7 @@ class ParmairTemperatureSetpointNumber(ParmairNumberEntity):
     ) -> None:
         """Initialize temperature setpoint number."""
         super().__init__(coordinator, entry, data_key, name)
-        
+
         # Set appropriate ranges based on register
         if data_key == REG_EXHAUST_TEMP_SETPOINT:
             self._attr_native_min_value = 18.0
@@ -206,7 +207,7 @@ class ParmairFilterIntervalNumber(ParmairNumberEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional attributes."""
-        attrs = super().extra_state_attributes or {}
+        attrs = dict(super().extra_state_attributes or {})
         value = self.native_value
         if value is not None:
             interval_map = {0: "3 months", 1: "4 months", 2: "6 months"}

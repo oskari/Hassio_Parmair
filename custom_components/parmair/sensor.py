@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -13,14 +14,13 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     UnitOfTemperature,
-    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, DEFAULT_NAME
+from .const import DOMAIN
 from .coordinator import ParmairCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,17 +33,17 @@ async def async_setup_entry(
 ) -> None:
     """Set up Parmair sensor platform."""
     coordinator: ParmairCoordinator = hass.data[DOMAIN][entry.entry_id]
-    
+
     _LOGGER.debug(
         "Setting up Parmair sensors. Available data keys: %s",
         list(coordinator.data.keys()) if coordinator.data else "None",
     )
-    
+
     entities = [
         # System information
         ParmairSoftwareVersionSensor(coordinator, entry, "software_version", "Software Version"),
         ParmairHeaterTypeSensor(coordinator, entry, "heater_type", "Heater Type"),
-        
+
         # Temperature sensors
         ParmairTemperatureSensor(coordinator, entry, "fresh_air_temp", "Fresh Air Temperature"),
         ParmairTemperatureSensor(coordinator, entry, "supply_after_recovery_temp", "Supply Air Temperature (After Recovery)"),
@@ -52,7 +52,7 @@ async def async_setup_entry(
         ParmairTemperatureSensor(coordinator, entry, "waste_temp", "Waste Air Temperature"),
         ParmairTemperatureSensor(coordinator, entry, "exhaust_temp_setpoint", "Exhaust Temperature Setpoint"),
         ParmairTemperatureSensor(coordinator, entry, "supply_temp_setpoint", "Supply Temperature Setpoint"),
-        
+
         # Other sensors
         ParmairControlStateSensor(coordinator, entry, "control_state", "Control State"),
         ParmairSpeedControlSensor(coordinator, entry, "actual_speed", "Current Speed"),
@@ -61,25 +61,25 @@ async def async_setup_entry(
         ParmairBinarySensor(coordinator, entry, "boost_state", "Boost State", {0: "Off", 1: "On"}),
         ParmairAlarmSensor(coordinator, entry, "alarm_count", "Alarm Count"),
         ParmairAlarmSensor(coordinator, entry, "sum_alarm", "Summary Alarm"),
-        
+
         # State sensors
         ParmairBinarySensor(coordinator, entry, "defrost_state", "Defrost State", {0: "Off", 1: "Active"}),
         ParmairBinarySensor(coordinator, entry, "filter_state", "Filter Status", {0: "Replace", 1: "OK"}),
-        
+
         # Performance sensors
         ParmairPercentageSensor(coordinator, entry, "heat_recovery_efficiency", "Heat Recovery Efficiency"),
         ParmairPercentageSensor(coordinator, entry, "supply_fan_speed", "Supply Fan Speed"),
         ParmairPercentageSensor(coordinator, entry, "exhaust_fan_speed", "Exhaust Fan Speed"),
-        
+
         # Optional sensors (will show unavailable if hardware not present)
         ParmairHumiditySensor(coordinator, entry, "humidity", "Humidity"),
         ParmairHumidity24hAvgSensor(coordinator, entry, "humidity_24h_avg", "Humidity 24h Average"),
         ParmairCO2Sensor(coordinator, entry, "co2", "CO2"),
-        
+
         # Filter change date sensor
         ParmairFilterChangeDateSensor(coordinator, entry),
     ]
-    
+
     async_add_entities(entities)
 
 
@@ -135,7 +135,8 @@ class ParmairTemperatureSensor(ParmairRegisterEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the sensor value."""
-        return self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self._data_key)
+        return float(value) if value is not None else None
 
 
 class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
@@ -162,10 +163,10 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
         # 0 or 65535 (0xFFFF) or -1 indicates sensor not installed
         if value in (0, 65535, -1, None):
             return None
-        return value
+        return int(value)
 
     @property
-    def device_class(self) -> str | None:
+    def device_class(self) -> SensorDeviceClass | None:
         """Return device class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
         if value in (0, 65535, -1, None):
@@ -173,7 +174,7 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
         return SensorDeviceClass.HUMIDITY
 
     @property
-    def state_class(self) -> str | None:
+    def state_class(self) -> SensorStateClass | None:
         """Return state class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
         if value in (0, 65535, -1, None):
@@ -205,10 +206,10 @@ class ParmairHumidity24hAvgSensor(ParmairRegisterEntity, SensorEntity):
         # -1 or None indicates sensor not available
         if value in (-1, None) or value < 0:
             return None
-        return value
+        return float(value)
 
     @property
-    def device_class(self) -> str | None:
+    def device_class(self) -> SensorDeviceClass | None:
         """Return device class only if sensor has valid data."""
         value = self.coordinator.data.get(self._data_key)
         if value in (-1, None) or value < 0:
@@ -216,13 +217,12 @@ class ParmairHumidity24hAvgSensor(ParmairRegisterEntity, SensorEntity):
         return SensorDeviceClass.HUMIDITY
 
     @property
-    def state_class(self) -> str | None:
+    def state_class(self) -> SensorStateClass | None:
         """Return state class only if sensor has valid data."""
         value = self.coordinator.data.get(self._data_key)
         if value in (-1, None) or value < 0:
             return None
         return SensorStateClass.MEASUREMENT
-        return SensorDeviceClass.HUMIDITY
 
 
 class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
@@ -249,10 +249,10 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
         # 0 or 65535 (0xFFFF) or -1 indicates sensor not installed
         if value in (0, 65535, -1, None):
             return None
-        return value
+        return int(value)
 
     @property
-    def device_class(self) -> str | None:
+    def device_class(self) -> SensorDeviceClass | None:
         """Return device class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
         if value in (0, 65535, -1, None):
@@ -260,7 +260,7 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
         return SensorDeviceClass.CO2
 
     @property
-    def state_class(self) -> str | None:
+    def state_class(self) -> SensorStateClass | None:
         """Return state class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
         if value in (0, 65535, -1, None):
@@ -286,7 +286,8 @@ class ParmairStateSensor(ParmairRegisterEntity, SensorEntity):
     @property
     def native_value(self) -> int | None:
         """Return the sensor value."""
-        return self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self._data_key)
+        return int(value) if value is not None else None
 
 
 class ParmairAlarmSensor(ParmairRegisterEntity, SensorEntity):
@@ -308,7 +309,8 @@ class ParmairAlarmSensor(ParmairRegisterEntity, SensorEntity):
     @property
     def native_value(self) -> int | None:
         """Return the sensor value."""
-        return self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self._data_key)
+        return int(value) if value is not None else None
 
 
 class ParmairPercentageSensor(ParmairRegisterEntity, SensorEntity):
@@ -332,7 +334,8 @@ class ParmairPercentageSensor(ParmairRegisterEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the sensor value."""
-        return self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self._data_key)
+        return float(value) if value is not None else None
 
 
 class ParmairSoftwareVersionSensor(ParmairRegisterEntity, SensorEntity):
@@ -355,7 +358,8 @@ class ParmairSoftwareVersionSensor(ParmairRegisterEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the sensor value."""
-        return self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self._data_key)
+        return float(value) if value is not None else None
 
 
 class ParmairControlStateSensor(ParmairRegisterEntity, SensorEntity):
@@ -420,9 +424,9 @@ class ParmairSpeedControlSensor(ParmairRegisterEntity, SensorEntity):
         if raw_value is None:
             return None
         return int(raw_value)
-    
+
     @property
-    def extra_state_attributes(self) -> dict[str, str]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional attributes."""
         return {
             "description": "0=Stop, 1=Speed 1, 2=Speed 2, 3=Speed 3, 4=Speed 4, 5=Speed 5"
@@ -547,10 +551,10 @@ class ParmairFilterChangeDateSensor(CoordinatorEntity[ParmairCoordinator], Senso
         day = self.coordinator.data.get("filter_day")
         month = self.coordinator.data.get("filter_month")
         year = self.coordinator.data.get("filter_year")
-        
+
         if day is None or month is None or year is None:
             return None
-        
+
         # Validate date values
         try:
             if not (1 <= day <= 31 and 1 <= month <= 12 and 2000 <= year <= 3000):
@@ -560,19 +564,19 @@ class ParmairFilterChangeDateSensor(CoordinatorEntity[ParmairCoordinator], Senso
             return None
 
     @property
-    def extra_state_attributes(self) -> dict[str, any]:
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional attributes."""
         next_day = self.coordinator.data.get("filter_next_day")
         next_month = self.coordinator.data.get("filter_next_month")
         next_year = self.coordinator.data.get("filter_next_year")
-        
+
         attrs = {}
-        
+
         if next_day is not None and next_month is not None and next_year is not None:
             try:
                 if 1 <= next_day <= 31 and 1 <= next_month <= 12 and 2000 <= next_year <= 3000:
                     attrs["next_change_date"] = f"{next_year:04d}-{next_month:02d}-{next_day:02d}"
             except (ValueError, TypeError):
                 pass
-        
+
         return attrs

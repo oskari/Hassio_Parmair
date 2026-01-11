@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 DOMAIN = "parmair"
 
@@ -25,7 +24,7 @@ SOFTWARE_VERSION_UNKNOWN = "unknown"
 
 # Heater types (from HEAT_RADIATOR_TYPE register 1240)
 # 0 = Water heater (Vesipatteri)
-# 1 = Electric heater (Sähköpatteri)  
+# 1 = Electric heater (Sähköpatteri)
 # 2 = No heater
 HEATER_TYPE_WATER = 0
 HEATER_TYPE_ELECTRIC = 1
@@ -187,7 +186,6 @@ REG_FILTER_INTERVAL = "filter_interval"
 
 # Additional sensor register keys
 REG_HEAT_RECOVERY_EFFICIENCY = "heat_recovery_efficiency"
-REG_OVERPRESSURE_TIMER = "overpressure_timer"
 REG_DEFROST_STATE = "defrost_state"
 REG_SUPPLY_FAN_SPEED = "supply_fan_speed"
 REG_EXHAUST_FAN_SPEED = "exhaust_fan_speed"
@@ -200,9 +198,9 @@ REG_FILTER_NEXT_MONTH = "filter_next_month"
 REG_FILTER_NEXT_YEAR = "filter_next_year"
 
 
-def _build_registers_v1() -> Dict[str, RegisterDefinition]:
+def _build_registers_v1() -> dict[str, RegisterDefinition]:
     """Build the complete register map for Parmair MAC devices with software version 1.xx.
-    
+
     This is the current register map from the CSV documentation.
     """
 
@@ -320,9 +318,6 @@ def _build_registers_v1() -> Dict[str, RegisterDefinition]:
         REG_HEAT_RECOVERY_EFFICIENCY: RegisterDefinition(
             REG_HEAT_RECOVERY_EFFICIENCY, 1190, "FG50_EA_M", scale=0.1
         ),
-        REG_OVERPRESSURE_TIMER: RegisterDefinition(
-            REG_OVERPRESSURE_TIMER, 1204, "OVERP_TIMER_FM"
-        ),
         REG_DEFROST_STATE: RegisterDefinition(
             REG_DEFROST_STATE, 1183, "DFRST_FI"
         ),
@@ -356,16 +351,16 @@ def _build_registers_v1() -> Dict[str, RegisterDefinition]:
     }
 
 
-def _build_registers_v2() -> Dict[str, RegisterDefinition]:
+def _build_registers_v2() -> dict[str, RegisterDefinition]:
     """Build the complete register map for Parmair MAC devices with software version 2.xx.
-    
+
     Based on official Parmair Modbus V2.XX documentation.
     Firmware 2.xx uses Register ID + 1000 addressing scheme.
     For example: Register ID 20 (TE01_M) -> Address 1020
-    
+
     Control states for V2.xx (USERSTATECONTROL_FO):
     0=Off, 1=Away, 2=Home, 3=Boost, 4=Sauna, 5=Fireplace
-    
+
     Note: These registers are NOT compatible with 1.xx firmware which uses different
     control registers (POWER_BTN_FI, IV01_CONTROLSTATE_FO, etc.).
     """
@@ -381,7 +376,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_FIRMWARE_VERSION: RegisterDefinition(REG_FIRMWARE_VERSION, 1014, "MULTI_FW_VER", scale=0.01),
         REG_SOFTWARE_VERSION: RegisterDefinition(REG_SOFTWARE_VERSION, 1015, "MULTI_SW_VER", scale=0.01),
         REG_BOOTLOADER_VERSION: RegisterDefinition(REG_BOOTLOADER_VERSION, 1016, "MULTI_BL_VER", scale=0.01),
-        
+
         # === 10 CONFIGURATION PARAMETERS ===
         REG_M10_TYPE: RegisterDefinition(REG_M10_TYPE, 1105, "M10_TYPE", writable=True),
         REG_M11_TYPE: RegisterDefinition(REG_M11_TYPE, 1106, "M11_TYPE", writable=True),
@@ -406,7 +401,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_BOOST_MIN_TIME: RegisterDefinition(REG_BOOST_MIN_TIME, 1140, "BST_MINTIME", writable=True),
         REG_CO2_MIN_TIME: RegisterDefinition(REG_CO2_MIN_TIME, 1141, "CO2_MINTIME", writable=True),
         REG_BOOST_TIME_LIMIT: RegisterDefinition(REG_BOOST_TIME_LIMIT, 1144, "BST_TIME_LIMIT", writable=True),
-        
+
         # Control registers - v2 uses different control scheme
         # 180: UNIT_CONTROL_FO - 0=Off, 1=On
         REG_POWER: RegisterDefinition(REG_POWER, 1180, "UNIT_CONTROL_FO", writable=True),
@@ -415,7 +410,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         # V2 doesn't have separate speed register - speed is determined by mode
         REG_ACTUAL_SPEED: RegisterDefinition(REG_ACTUAL_SPEED, 1181, "USERSTATECONTROL_FO"),
         REG_SPEED_CONTROL: RegisterDefinition(REG_SPEED_CONTROL, 1181, "USERSTATECONTROL_FO", writable=True),
-        
+
         # === 2 PHYSICAL INPUTS ===
         REG_FRESH_AIR_TEMP: RegisterDefinition(REG_FRESH_AIR_TEMP, 1020, "TE01_M", scale=0.1),
         REG_SUPPLY_AFTER_RECOVERY_TEMP: RegisterDefinition(REG_SUPPLY_AFTER_RECOVERY_TEMP, 1021, "TE05_M", scale=0.1),
@@ -431,7 +426,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_EXTERNAL_SIGNAL: RegisterDefinition(REG_EXTERNAL_SIGNAL, 1031, "EXTERNAL_M", scale=0.1),
         REG_EXTERNAL_BOOST_SIGNAL: RegisterDefinition(REG_EXTERNAL_BOOST_SIGNAL, 1035, "EXTERNAL_BOOST_M", scale=0.1),
         REG_TEMP_DEFLECTION: RegisterDefinition(REG_TEMP_DEFLECTION, 1036, "TE10_DEFECTION_M", scale=0.1),
-        
+
         # === 3 PHYSICAL OUTPUTS ===
         REG_SUPPLY_FAN_SPEED: RegisterDefinition(REG_SUPPLY_FAN_SPEED, 1040, "TF10_Y", scale=0.1),
         REG_EXHAUST_FAN_SPEED: RegisterDefinition(REG_EXHAUST_FAN_SPEED, 1042, "PF30_Y", scale=0.1),
@@ -439,7 +434,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_HEAT_RECOVERY_OUTPUT: RegisterDefinition(REG_HEAT_RECOVERY_OUTPUT, 1046, "FG50_Y", scale=0.1),
         REG_PRE_HEATER_OUTPUT: RegisterDefinition(REG_PRE_HEATER_OUTPUT, 1048, "EC05_Y", scale=0.1),
         REG_HEAT_PUMP_OUTPUT: RegisterDefinition(REG_HEAT_PUMP_OUTPUT, 1050, "HP_RAD_O"),
-        
+
         # === 4 SETTINGS ===
         REG_HOME_SPEED: RegisterDefinition(REG_HOME_SPEED, 1060, "HOME_SPEED_S", writable=True),
         REG_SUPPLY_TEMP_SETPOINT: RegisterDefinition(REG_SUPPLY_TEMP_SETPOINT, 1061, "TE10_MIN_HOME_S", scale=0.1, writable=True),
@@ -471,15 +466,11 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_SUMMER_TEMP_SETPOINT: RegisterDefinition(REG_SUMMER_TEMP_SETPOINT, 1096, "TE10_MIN_SUMMER_S", scale=0.1, writable=True),
         REG_SUPPLY_TEMP_MAX: RegisterDefinition(REG_SUPPLY_TEMP_MAX, 1097, "TE10_MAX_S", scale=0.1, writable=True),
         REG_BOOST_TEMP_LIMIT: RegisterDefinition(REG_BOOST_TEMP_LIMIT, 1098, "BST_TE01_LIMIT", scale=0.1, writable=True),
-        
+
         # === 6 SOFT MEASUREMENTS AND CONTROL POINTS ===
-        REG_POWER: RegisterDefinition(REG_POWER, 1180, "UNIT_CONTROL_FO", writable=True),
-        REG_CONTROL_STATE: RegisterDefinition(REG_CONTROL_STATE, 1181, "USERSTATECONTROL_FO", writable=True),
         REG_HOME_STATE: RegisterDefinition(REG_HOME_STATE, 1181, "USERSTATECONTROL_FO"),
         REG_BOOST_STATE: RegisterDefinition(REG_BOOST_STATE, 1181, "USERSTATECONTROL_FO"),
         REG_OVERPRESSURE_STATE: RegisterDefinition(REG_OVERPRESSURE_STATE, 1181, "USERSTATECONTROL_FO"),
-        REG_ACTUAL_SPEED: RegisterDefinition(REG_ACTUAL_SPEED, 1181, "USERSTATECONTROL_FO"),
-        REG_SPEED_CONTROL: RegisterDefinition(REG_SPEED_CONTROL, 1181, "USERSTATECONTROL_FO", writable=True),
         REG_DEFROST_STATE: RegisterDefinition(REG_DEFROST_STATE, 1182, "DFRST_FI"),
         REG_HEAT_RECOVERY_EFFICIENCY: RegisterDefinition(REG_HEAT_RECOVERY_EFFICIENCY, 1183, "FG50_EA_M", scale=0.1),
         REG_FILTER_STATE: RegisterDefinition(REG_FILTER_STATE, 1184, "FILTER_STATE_FI"),
@@ -491,7 +482,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_HUMIDITY_24H_AVG: RegisterDefinition(REG_HUMIDITY_24H_AVG, 1192, "ME05_AVG_FM", scale=0.1),
         REG_POWER_LIMIT: RegisterDefinition(REG_POWER_LIMIT, 1199, "PWR_LIMIT_FY", scale=0.1),
         REG_OUTDOOR_TEMP_AVG: RegisterDefinition(REG_OUTDOOR_TEMP_AVG, 1213, "TE01_AVG_FM", scale=0.1),
-        
+
         # === 7 ALARMS ===
         REG_ALARM_TE01: RegisterDefinition(REG_ALARM_TE01, 1220, "TE01_FA"),
         REG_ALARM_TE10: RegisterDefinition(REG_ALARM_TE10, 1221, "TE10_FA"),
@@ -505,7 +496,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_ALARM_TE30_HIGH: RegisterDefinition(REG_ALARM_TE30_HIGH, 1229, "TE30_HA"),
         REG_ALARM_TE10_LOW: RegisterDefinition(REG_ALARM_TE10_LOW, 1230, "TE10_LA"),
         REG_ALARM_FILTER: RegisterDefinition(REG_ALARM_FILTER, 1240, "FILTER_FA"),
-        
+
         # === UNDOCUMENTED but confirmed working on MAC 120 fw 2.25 ===
         REG_BOOST_TIME_SETTING: RegisterDefinition(REG_BOOST_TIME_SETTING, 1066, "BOOST_TIME_S", writable=True),  # undocumented
         REG_OVERPRESSURE_TIME_SETTING: RegisterDefinition(REG_OVERPRESSURE_TIME_SETTING, 1069, "OVERP_TIME_S", writable=True),  # undocumented
@@ -517,19 +508,19 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         REG_FILTER_NEXT_DAY: RegisterDefinition(REG_FILTER_NEXT_DAY, 1196, "FILTERNEXT_DAY", writable=True),  # undocumented
         REG_FILTER_NEXT_MONTH: RegisterDefinition(REG_FILTER_NEXT_MONTH, 1197, "FILTERNEXT_MONTH", writable=True),  # undocumented
         REG_FILTER_NEXT_YEAR: RegisterDefinition(REG_FILTER_NEXT_YEAR, 1198, "FILTERNEXT_YEAR", writable=True),  # undocumented
-        
+
         # === Optional/Undocumented ===
         REG_SUM_ALARM: RegisterDefinition(REG_SUM_ALARM, 1005, "SUM_ALARM", optional=True),  # undocumented
         REG_ALARMS_STATE: RegisterDefinition(REG_ALARMS_STATE, 1204, "ALARMS_STATE_FI", optional=True),  # undocumented
     }
 
 
-def get_registers_for_version(software_version: str) -> Dict[str, RegisterDefinition]:
+def get_registers_for_version(software_version: str) -> dict[str, RegisterDefinition]:
     """Get the appropriate register map based on software version.
-    
+
     Args:
         software_version: Software version string (e.g., "1.83", "2.10")
-    
+
     Returns:
         Dictionary mapping register keys to RegisterDefinition objects
     """
@@ -624,13 +615,13 @@ POLLING_REGISTER_KEYS = (
 )
 
 
-def get_register_definition(key: str, registers: Dict[str, RegisterDefinition] | None = None) -> RegisterDefinition:
+def get_register_definition(key: str, registers: dict[str, RegisterDefinition] | None = None) -> RegisterDefinition:
     """Return the register definition for a given key.
-    
+
     Args:
         key: Register key to look up
         registers: Optional register map to use. If None, uses default REGISTERS.
-    
+
     Returns:
         RegisterDefinition for the requested register
     """

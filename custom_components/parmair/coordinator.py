@@ -1,19 +1,20 @@
 """DataUpdateCoordinator for Parmair integration."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import threading
 import time
 from datetime import timedelta
 from typing import Any
 
-from pymodbus.client import ModbusTcpClient
-from pymodbus.exceptions import ModbusException
-
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.config_entries import ConfigEntry
+from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ModbusException
 
 from .const import (
     CONF_HEATER_TYPE,
@@ -36,15 +37,20 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
-    """Best-effort assignment for clients requiring attribute-based unit selection."""
+def _read_registers(client: ModbusTcpClient, address: int, count: int, slave_id: int):
+    """Read holding registers with pymodbus 3.7+ compatibility (slave vs device_id)."""
+    try:
+        return client.read_holding_registers(address=address, count=count, slave=slave_id)  # type: ignore[call-arg]
+    except TypeError:
+        return client.read_holding_registers(address=address, count=count, device_id=slave_id)
 
-    for attr in ("unit_id", "slave_id", "unit", "slave"):
-        if hasattr(client, attr):
-            try:
-                setattr(client, attr, unit_id)
-            except Exception:  # pragma: no cover
-                continue
+
+def _write_register(client: ModbusTcpClient, address: int, value: int, slave_id: int):
+    """Write register with pymodbus 3.7+ compatibility (slave vs device_id)."""
+    try:
+        return client.write_register(address, value, slave=slave_id)  # type: ignore[call-arg]
+    except TypeError:
+        return client.write_register(address, value, device_id=slave_id)
 
 
 class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -58,12 +64,12 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.slave_id = entry.data[CONF_SLAVE_ID]
         self.software_version = entry.data.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
         self.heater_type = entry.data.get(CONF_HEATER_TYPE, HEATER_TYPE_UNKNOWN)
-        
+
         scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-        
+
         # Get version-specific register map
         self._registers = get_registers_for_version(self.software_version)
-        
+
         self._poll_registers: list[RegisterDefinition] = [
             self._registers[key]
             for key in POLLING_REGISTER_KEYS
@@ -72,7 +78,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._client = ModbusTcpClient(host=self.host, port=self.port)
         self._lock = threading.Lock()
-        
+
         super().__init__(
             hass,
             _LOGGER,
@@ -83,7 +89,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from Parmair via Modbus."""
         try:
-            return await self.hass.async_add_executor_job(self._read_modbus_data)
+            result = await self.hass.async_add_executor_job(self._read_modbus_data)
+            return dict(result)  # Explicit conversion to satisfy type checker
         except ModbusException as err:
             raise UpdateFailed(f"Error communicating with Parmair device: {err}") from err
 
@@ -92,20 +99,15 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         with self._lock:
             # Close and reconnect to flush any stale responses in buffer
             if self._client.connected:
-                try:
+                with contextlib.suppress(Exception):
                     self._client.close()
-                except:
-                    pass  # Ignore close errors
-            
+
             if not self._client.connect():
                 raise ModbusException("Failed to connect to Modbus device")
-            
-            # Ensure slave_id is set on the client for legacy pymodbus
-            _set_legacy_unit(self._client, self.slave_id)
-            
+
             # Small delay after connect to allow device to stabilize
             time.sleep(0.05)
-            
+
             data: dict[str, Any] = {}
             failed_registers = []
 
@@ -118,14 +120,14 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     data[definition.key] = value
                     # Delay between reads to prevent transaction ID conflicts
                     time.sleep(0.05)
-                
+
                 if failed_registers:
                     _LOGGER.debug(
                         "Failed to read %d registers: %s",
                         len(failed_registers),
                         ", ".join(failed_registers),
                     )
-                
+
                 _LOGGER.debug(
                     "Read data from Parmair %s: %d values - %s",
                     self.host,
@@ -133,16 +135,14 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     data,
                 )
                 return data
-                
+
             except Exception as ex:
                 _LOGGER.error("Error reading from Modbus: %s", ex)
                 raise ModbusException(f"Failed to read data: {ex}") from ex
             finally:
                 # Always close after reading to prevent buffer buildup
-                try:
+                with contextlib.suppress(Exception):
                     self._client.close()
-                except:
-                    pass
 
     def write_register(self, key: str, value: float | int) -> bool:
         """Write a value to a Modbus register respecting scaling."""
@@ -150,31 +150,12 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         definition = get_register_definition(key)
         try:
             with self._lock:
-                if not self._client.connected:
-                    if not self._client.connect():
-                        return False
+                if not self._client.connected and not self._client.connect():
+                    return False
 
                 raw_value = self._to_raw(definition, value)
-                try:
-                    result = self._client.write_register(
-                        definition.address, raw_value, unit=self.slave_id
-                    )
-                except TypeError:
-                    try:
-                        result = self._client.write_register(
-                            definition.address, raw_value, slave=self.slave_id
-                        )
-                    except TypeError:
-                        try:
-                            result = self._client.write_register(
-                                definition.address, raw_value, device_id=self.slave_id
-                            )
-                        except TypeError:
-                            _set_legacy_unit(self._client, self.slave_id)
-                            result = self._client.write_register(
-                                definition.address, raw_value
-                            )
-                return not result.isError() if hasattr(result, 'isError') else result is not None
+                result = _write_register(self._client, definition.address, raw_value, self.slave_id)
+                return not result.isError()
         except Exception as ex:
             _LOGGER.error(
                 "Error writing to Modbus register %s (%s): %s",
@@ -186,8 +167,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_write_register(self, key: str, value: float | int) -> bool:
         """Write a value to a Modbus register (async)."""
-
-        return await self.hass.async_add_executor_job(self.write_register, key, value)
+        result = await self.hass.async_add_executor_job(self.write_register, key, value)
+        return bool(result)
 
     async def async_shutdown(self) -> None:
         """Close the Modbus connection."""
@@ -195,40 +176,40 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             with self._lock:
                 if self._client.connected:
                     self._client.close()
-        
+
         await self.hass.async_add_executor_job(_close)
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return device information."""
         sw_version = self.data.get("software_version")
         hw_type = self.data.get("hardware_type")
-        
+
         # Determine MAC model from hardware type
         model = "MAC"
         if hw_type is not None:
             hw_type_int = int(hw_type)
             # For V2, use mapping if available, otherwise use raw value
-            if self._software_version == SOFTWARE_VERSION_2:
+            if self.software_version == SOFTWARE_VERSION_2:
                 model_num = HARDWARE_TYPE_MAP_V2.get(hw_type_int, hw_type_int)
             else:
                 model_num = hw_type_int
             model = f"MAC {model_num}"
-        
-        device_info = {
-            "identifiers": {(DOMAIN, self.entry.entry_id)},
-            "name": self.entry.data.get("name", DEFAULT_NAME),
-            "manufacturer": "Parmair",
-            "model": model,
-        }
-        
+
+        device_info = DeviceInfo(
+            identifiers={(DOMAIN, self.entry.entry_id)},
+            name=self.entry.data.get("name", DEFAULT_NAME),
+            manufacturer="Parmair",
+            model=model,
+        )
+
         # Add software version
         if sw_version is not None:
             if isinstance(sw_version, (int, float)):
                 device_info["sw_version"] = f"{sw_version:.2f}"
             else:
                 device_info["sw_version"] = str(sw_version)
-        
+
         return device_info
 
     def get_register_definition(self, key: str) -> RegisterDefinition:
@@ -237,45 +218,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
         """Read and scale a single register."""
-
-        try:
-            # Try modern pymodbus with keyword arguments first
-            result = self._client.read_holding_registers(
-                address=definition.address, count=1, slave=self.slave_id
-            )
-        except TypeError:
-            try:
-                # Try with 'unit' instead of 'slave'
-                result = self._client.read_holding_registers(
-                    address=definition.address, count=1, unit=self.slave_id
-                )
-            except TypeError:
-                # Try older versions with positional + keyword
-                try:
-                    result = self._client.read_holding_registers(
-                        definition.address, 1, unit=self.slave_id
-                    )
-                except TypeError:
-                    try:
-                        result = self._client.read_holding_registers(
-                            definition.address, 1, slave=self.slave_id
-                        )
-                    except TypeError:
-                        try:
-                            result = self._client.read_holding_registers(
-                                definition.address, 1, device_id=self.slave_id
-                            )
-                        except TypeError:
-                            _set_legacy_unit(self._client, self.slave_id)
-                            try:
-                                result = self._client.read_holding_registers(
-                                    definition.address, 1
-                                )
-                            except TypeError:
-                                result = self._client.read_holding_registers(
-                                    definition.address
-                                )
-        if not result or (hasattr(result, "isError") and result.isError()):
+        result = _read_registers(self._client, definition.address, 1, self.slave_id)
+        if not result or result.isError():
             _LOGGER.warning(
                 "Failed reading register %s (%s) at address %d",
                 definition.register_id,
@@ -284,12 +228,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             return None
 
-        if hasattr(result, "registers"):
-            raw = result.registers[0]
-        elif isinstance(result, (list, tuple)):
-            raw = result[0]
-        else:
-            raw = result
+        raw = result.registers[0]
 
         # Convert to signed int16 if value is > 32767 (handle negative temperatures)
         if raw > 32767:

@@ -178,11 +178,11 @@ class ParmairBoostSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
         boost_time_map = {0: "30 minutes", 1: "60 minutes", 2: "90 minutes", 3: "120 minutes", 4: "180 minutes"}
         # Boost speed setting: 2-4 maps to speed 3-5
         boost_speed_map = {2: "Speed 3", 3: "Speed 4", 4: "Speed 5"}
-        
+
         boost_time_value = self.coordinator.data.get(REG_BOOST_TIME_SETTING)
         boost_speed_value = self.coordinator.data.get(REG_BOOST_SETTING)
         boost_timer_remaining = self.coordinator.data.get(REG_BOOST_TIMER)
-        
+
         attrs = {}
         if boost_time_value is not None:
             attrs["preset_duration"] = boost_time_map.get(boost_time_value, f"Unknown ({boost_time_value})")
@@ -190,7 +190,7 @@ class ParmairBoostSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
             attrs["preset_speed"] = boost_speed_map.get(boost_speed_value, f"Unknown ({boost_speed_value})")
         if boost_timer_remaining is not None and boost_timer_remaining > 0:
             attrs["remaining_time"] = f"{boost_timer_remaining} minutes"
-        
+
         return attrs
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -247,16 +247,16 @@ class ParmairOverpressureSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEnt
         """Return overpressure mode predefined settings and current timer."""
         # Overpressure time setting: 0=15min, 1=30min, 2=45min, 3=60min, 4=120min
         overp_time_map = {0: "15 minutes", 1: "30 minutes", 2: "45 minutes", 3: "60 minutes", 4: "120 minutes"}
-        
+
         overp_time_value = self.coordinator.data.get(REG_OVERPRESSURE_TIME_SETTING)
         overp_timer_remaining = self.coordinator.data.get(REG_OVERPRESSURE_TIMER)
-        
+
         attrs = {}
         if overp_time_value is not None:
             attrs["preset_duration"] = overp_time_map.get(overp_time_value, f"Unknown ({overp_time_value})")
         if overp_timer_remaining is not None and overp_timer_remaining > 0:
             attrs["remaining_time"] = f"{overp_timer_remaining} minutes"
-        
+
         return attrs
 
     async def async_turn_on(self, **kwargs: Any) -> None:
