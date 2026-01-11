@@ -23,11 +23,11 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    HARDWARE_TYPE_MAP_V2,
     HEATER_TYPE_UNKNOWN,
     POLLING_REGISTER_KEYS,
-    REGISTERS,
     SOFTWARE_VERSION_1,
-    SOFTWARE_VERSION_UNKNOWN,
+    SOFTWARE_VERSION_2,
     RegisterDefinition,
     get_register_definition,
     get_registers_for_version,
@@ -204,10 +204,16 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         sw_version = self.data.get("software_version")
         hw_type = self.data.get("hardware_type")
         
-        # Determine MAC model from hardware type (80, 100, or 150)
+        # Determine MAC model from hardware type
         model = "MAC"
         if hw_type is not None:
-            model = f"MAC {int(hw_type)}"
+            hw_type_int = int(hw_type)
+            # For V2, use mapping if available, otherwise use raw value
+            if self._software_version == SOFTWARE_VERSION_2:
+                model_num = HARDWARE_TYPE_MAP_V2.get(hw_type_int, hw_type_int)
+            else:
+                model_num = hw_type_int
+            model = f"MAC {model_num}"
         
         device_info = {
             "identifiers": {(DOMAIN, self.entry.entry_id)},

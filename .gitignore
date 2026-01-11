@@ -34,3 +34,6 @@ MODBUS_REGISTERS_2XX.md
 *.xlsm
 *.xlsb
 *.csv
+
+# Tools
+tools/dumps/
