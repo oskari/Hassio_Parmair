@@ -100,6 +100,12 @@ The hardware model (MAC80/MAC100/MAC150) and firmware version (1.x/2.x) are auto
 - **Time Program Enable**: Enable/disable scheduled time programs
 - **Heater Enable**: Enable/disable heating element
 
+> **⚠️ Heater Control Warning:**
+> 
+> Disabling the heating elements entirely carries inherent risks and may void warranty coverage. While heating elements are the primary energy-consuming components in the ventilation system, they are essential for freeze protection and optimal operation.
+> 
+> When using external automation systems (such as Home Assistant) to override the device's built-in control logic, the manufacturer cannot accept liability for component failures or malfunctions that occur during the warranty period. Any damage resulting from modified heater control settings may not be covered under warranty.
+
 ### Sensor Entities
 - **Fresh Air Temperature**: Outdoor air temperature
 - **Supply Air Temperature**: Air temperature being supplied to rooms
