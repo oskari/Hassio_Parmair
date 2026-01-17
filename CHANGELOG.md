@@ -1,3 +1,24 @@
+## 0.9.0.6 - Aggressive Timing Fix (2026-01-17)
+
+### Fixed
+- **Increased Modbus Timing Delays**: Much more aggressive delays to prevent severe transaction ID backlog
+  - Post-connection delay: 150ms → 300ms (2x increase)
+  - Inter-register read delay: 80ms → 200ms (2.5x increase)
+  - Post-write delay: 80ms → 200ms (2.5x increase)
+  - Fixes cases where device buffer had 100+ responses backed up
+  - Addresses persistent "transaction_id mismatch" errors when reading 30+ registers
+
+### Impact
+- Polling will be significantly slower (30 registers × 200ms = ~6 seconds per poll)
+- Trade-off: reliability over speed for devices with slow Modbus processing
+
+### Notes
+- **Important**: Also ensure slave_id is set to 0 (see v0.9.0.5)
+- If you still experience transaction ID errors after this update:
+  - Verify slave_id is configured as 0 (not 1)
+  - Consider reducing the number of polled registers
+  - Check for other devices causing network congestion
+
 ## 0.9.0.5 - Slave ID Default Fix (2026-01-17)
 
 ### Fixed
