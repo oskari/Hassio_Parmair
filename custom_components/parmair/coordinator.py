@@ -177,6 +177,10 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 
                 # Small delay after write to allow device to process
                 time.sleep(0.2)
+                
+                return not result.isError() if hasattr(result, 'isError') else result is not None
+        except Exception as ex:
+            _LOGGER.error(
                 "Error writing to Modbus register %s (%s): %s",
                 definition.register_id,
                 definition.label,

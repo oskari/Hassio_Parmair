@@ -1,4 +1,18 @@
+## 0.9.0.7 - Emergency Syntax Fix (2026-01-17)
+
+### Fixed
+- **Critical**: Fixed syntax error in coordinator.py line 184 that prevented integration from loading
+  - Restored missing return statement and exception handler
+  - Bug was introduced in v0.9.0.6 during timing adjustments
+  - **Do not use v0.9.0.6** - it is broken
+
+### Notes
+- If you installed v0.9.0.6, update immediately to v0.9.0.7
+- All timing fixes from v0.9.0.6 are preserved (300ms/200ms delays)
+
 ## 0.9.0.6 - Aggressive Timing Fix (2026-01-17)
+
+**WARNING: This version has a syntax error. Use v0.9.0.7 instead.**
 
 ### Fixed
 - **Increased Modbus Timing Delays**: Much more aggressive delays to prevent severe transaction ID backlog
