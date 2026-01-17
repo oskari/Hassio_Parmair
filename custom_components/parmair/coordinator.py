@@ -103,8 +103,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Ensure slave_id is set on the client for legacy pymodbus
             _set_legacy_unit(self._client, self.slave_id)
             
-            # Small delay after connect to allow device to stabilize
-            time.sleep(0.05)
+            # Longer delay after connect to allow device to stabilize and clear buffers
+            time.sleep(0.15)
             
             data: dict[str, Any] = {}
             failed_registers = []
@@ -116,8 +116,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         failed_registers.append(f"{definition.label}({definition.register_id})")
                         continue
                     data[definition.key] = value
-                    # Delay between reads to prevent transaction ID conflicts
-                    time.sleep(0.05)
+                    # Longer delay between reads to prevent transaction ID conflicts
+                    time.sleep(0.08)
                 
                 if failed_registers:
                     _LOGGER.debug(
@@ -174,6 +174,10 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             result = self._client.write_register(
                                 definition.address, raw_value
                             )
+                
+                # Small delay after write to allow device to process
+                time.sleep(0.08)
+                
                 return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
             _LOGGER.error(

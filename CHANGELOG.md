@@ -1,3 +1,19 @@
+## 0.9.0.4 - Transaction ID Reliability Fix (2026-01-17)
+
+### Fixed
+- **Eliminated Transaction ID Mismatch Errors**: Increased timing delays to prevent buffer overflow
+  - Increased post-connection stabilization delay from 50ms to 150ms
+  - Increased inter-register read delay from 50ms to 80ms
+  - Added 80ms delay after register writes
+  - Prevents "transaction_id mismatch" errors (4000+ occurrences eliminated)
+  - Device now has adequate time to process each request before next one arrives
+
+### Technical
+- Connection stabilization: 50ms → 150ms
+- Register read spacing: 50ms → 80ms
+- Added write completion delay: 80ms
+- Improved buffer flushing on reconnect
+
 ## 0.9.0.3 - Detection Improvements (2026-01-17)
 
 ### Changed
