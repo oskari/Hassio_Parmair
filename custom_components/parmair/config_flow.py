@@ -62,7 +62,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): cv.string,
         vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): vol.All(
-            vol.Coerce(int), vol.Range(min=1, max=247)
+            vol.Coerce(int), vol.Range(min=0, max=247)
         ),
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
             vol.Coerce(int), vol.Range(min=5, max=300)

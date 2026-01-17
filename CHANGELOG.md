@@ -1,3 +1,21 @@
+## 0.9.0.5 - Slave ID Default Fix (2026-01-17)
+
+### Fixed
+- **Corrected Default Slave ID**: Changed from 1 to 0 to match Parmair device configuration
+  - Eliminates "request ask for id=1 but got id=0" errors (146+ occurrences)
+  - Parmair MAC devices respond with unit ID 0, not 1
+  - Config flow now accepts slave ID 0-247 (previously 1-247)
+  - Existing installations with slave_id=1 will need to reconfigure or manually change to 0
+
+### Technical
+- Updated DEFAULT_SLAVE_ID from 1 to 0
+- Updated config validation to allow min=0
+- Added comment explaining Parmair uses unit ID 0
+
+### Migration
+- **New installations**: Will automatically use slave ID 0
+- **Existing installations**: If you see "id=1 but got id=0" errors, delete and re-add the integration (or edit .storage/core.config_entries and change slave_id from 1 to 0)
+
 ## 0.9.0.4 - Transaction ID Reliability Fix (2026-01-17)
 
 ### Fixed
