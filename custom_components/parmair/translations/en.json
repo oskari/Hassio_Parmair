@@ -11,6 +11,14 @@
           "scan_interval": "Polling Interval (seconds)",
           "name": "Name"
         }
+      },
+      "manual_version": {
+        "title": "Select Firmware Version",
+        "description": "Auto-detection failed. Please manually select your device's firmware version and heater type. Check your device's display or manual for the firmware version.",
+        "data": {
+          "software_version": "Firmware Version",
+          "heater_type": "Heater Type"
+        }
       }
     },
     "error": {

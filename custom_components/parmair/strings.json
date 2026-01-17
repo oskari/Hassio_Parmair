@@ -10,6 +10,14 @@
           "slave_id": "Modbus Slave ID",
           "name": "Name"
         }
+      },
+      "manual_version": {
+        "title": "Select Firmware Version",
+        "description": "Auto-detection failed to determine your device's firmware version. Please select your Parmair device's firmware version and heater type manually. Check your device's display or manual for the firmware version.",
+        "data": {
+          "software_version": "Firmware Version",
+          "heater_type": "Heater Type"
+        }
       }
     },
     "error": {

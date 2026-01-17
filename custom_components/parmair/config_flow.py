@@ -100,6 +100,22 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         # Longer initial delay after connection for device to stabilize during setup
         time.sleep(1.0)
         
+        # Warm-up: Read universal register (1001 - power) repeatedly until device responds
+        # This "wakes up" the device and ensures it's ready for version detection
+        _LOGGER.debug("Warming up connection by reading power register (1001)...")
+        warmup_success = False
+        for attempt in range(5):  # Try up to 5 times
+            warmup_value = _read_register(1001)
+            if warmup_value is not None:
+                _LOGGER.debug("Warm-up successful on attempt %d, device is responding", attempt + 1)
+                warmup_success = True
+                break
+            _LOGGER.debug("Warm-up attempt %d failed, waiting 500ms...", attempt + 1)
+            time.sleep(0.5)
+        
+        if not warmup_success:
+            _LOGGER.warning("Device warm-up failed after 5 attempts, detection may fail")
+        
         # Two-register consensus detection for robust firmware identification
         # Each firmware version has unique SOFTWARE_VERSION and VENT_MACHINE addresses
         # Both registers must be readable for positive identification
@@ -232,14 +248,13 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                     firmware, sw_valid, vm_readable
                 )
         
-        # If software version was not detected, default to 1.xx
+        # If software version was not detected, return None to trigger manual selection
         if detected_sw_version == SOFTWARE_VERSION_UNKNOWN:
             _LOGGER.warning(
-                "Could not auto-detect software version via two-register consensus, defaulting to firmware %s",
-                SOFTWARE_VERSION_1,
+                "Could not auto-detect software version via two-register consensus"
             )
-            detected_sw_version = SOFTWARE_VERSION_1
-            detected_firmware_registers = "1.xx"
+            # Return None to indicate detection failed - user will be asked to select manually
+            return None
         
         # Now detect heater type using the correct address for detected firmware
         heater_addresses = []
@@ -296,7 +311,14 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         
         return detected_sw_version, detected_heater_type
     
-    detected_sw_version, detected_heater_type = await hass.async_add_executor_job(_detect_device_info)
+    detection_result = await hass.async_add_executor_job(_detect_device_info)
+    
+    # If detection returned None, firmware version couldn't be determined
+    if detection_result is None:
+        client.close()
+        return None  # Signal to caller that manual selection is needed
+    
+    detected_sw_version, detected_heater_type = detection_result
     
     # Verify communication by reading power register
     power_register = get_register_definition(REG_POWER)
@@ -356,6 +378,7 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._integration_version: str | None = None
         self._user_input: dict[str, Any] | None = None
+        self._detection_failed: bool = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -380,6 +403,12 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 info = await validate_connection(self.hass, user_input)
                 
+                # If info is None, detection failed - ask user to manually select
+                if info is None:
+                    self._user_input = user_input
+                    self._detection_failed = True
+                    return await self.async_step_manual_version()
+                
                 # Store detected software version and heater type
                 user_input[CONF_SOFTWARE_VERSION] = info[CONF_SOFTWARE_VERSION]
                 user_input[CONF_HEATER_TYPE] = info[CONF_HEATER_TYPE]
@@ -401,4 +430,35 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    # Manual configuration step removed - now uses auto-detection with defaults
+    async def async_step_manual_version(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle manual firmware version selection when auto-detection fails."""
+        if user_input is not None:
+            # Combine stored connection info with manual selections
+            final_data = {**self._user_input, **user_input}
+            
+            # Create entry with manually selected version
+            return self.async_create_entry(
+                title=final_data[CONF_NAME],
+                data=final_data
+            )
+        
+        # Show form for manual selection
+        return self.async_show_form(
+            step_id="manual_version",
+            data_schema=vol.Schema({
+                vol.Required(CONF_SOFTWARE_VERSION, default=SOFTWARE_VERSION_1): vol.In({
+                    SOFTWARE_VERSION_1: "Firmware 1.xx",
+                    SOFTWARE_VERSION_2: "Firmware 2.xx",
+                }),
+                vol.Required(CONF_HEATER_TYPE, default=HEATER_TYPE_NONE): vol.In({
+                    HEATER_TYPE_NONE: "None",
+                    HEATER_TYPE_WATER: "Water",
+                    HEATER_TYPE_ELECTRIC: "Electric",
+                }),
+            }),
+            description_placeholders={
+                "info": "Auto-detection failed. Please select your device's firmware version and heater type manually.",
+            },
+        )

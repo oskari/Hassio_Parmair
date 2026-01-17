@@ -1,3 +1,31 @@
+## 0.9.0.9 - Detection Warm-up + Manual Fallback (2026-01-18)
+
+### Added
+- **Connection Warm-up**: Read power register (1001) 5 times with 500ms delays before detection
+  - "Wakes up" device so it's ready to respond to version detection reads
+  - Addresses issue where device needs time after connection to respond
+- **Manual Firmware Selection**: If auto-detection fails, user can manually select:
+  - Firmware version (1.xx or 2.xx)
+  - Heater type (None, Water, Electric)
+  - New configuration step with dropdown menus
+  - No more forced defaults
+
+### Changed
+- Detection now has two-phase approach:
+  1. Warm-up: Read universal register repeatedly until device responds
+  2. Version detection: Try firmware 2.xx then 1.xx with consensus method
+- If detection fails, shows manual selection form instead of defaulting to 1.xx
+
+### Fixed
+- Devices that don't respond immediately after connection can now be configured
+- Users with firmware 2.xx devices can now manually specify version if auto-detection fails
+- No more silent defaulting to wrong firmware version
+
+### User Experience
+- If auto-detection succeeds: Same as before, seamless setup
+- If auto-detection fails: User gets clear form to select version manually
+- Logs show warm-up progress and detection attempts
+
 ## 0.9.0.8 - Detection Timing Fix (2026-01-18)
 
 ### Fixed
