@@ -100,22 +100,6 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         # Longer initial delay after connection for device to stabilize during setup
         time.sleep(1.0)
         
-        # Warm-up: Read universal register (1001 - power) repeatedly until device responds
-        # This "wakes up" the device and ensures it's ready for version detection
-        _LOGGER.debug("Warming up connection by reading power register (1001)...")
-        warmup_success = False
-        for attempt in range(5):  # Try up to 5 times
-            warmup_value = _read_register(1001)
-            if warmup_value is not None:
-                _LOGGER.debug("Warm-up successful on attempt %d, device is responding", attempt + 1)
-                warmup_success = True
-                break
-            _LOGGER.debug("Warm-up attempt %d failed, waiting 500ms...", attempt + 1)
-            time.sleep(0.5)
-        
-        if not warmup_success:
-            _LOGGER.warning("Device warm-up failed after 5 attempts, detection may fail")
-        
         # Two-register consensus detection for robust firmware identification
         # Each firmware version has unique SOFTWARE_VERSION and VENT_MACHINE addresses
         # Both registers must be readable for positive identification
@@ -175,6 +159,22 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             except Exception as ex:
                 _LOGGER.debug("Failed to read register at address %d: %s", address, ex)
             return None
+        
+        # Warm-up: Read universal register (1001 - power) repeatedly until device responds
+        # This "wakes up" the device and ensures it's ready for version detection
+        _LOGGER.debug("Warming up connection by reading power register (1001)...")
+        warmup_success = False
+        for attempt in range(5):  # Try up to 5 times
+            warmup_value = _read_register(1001)
+            if warmup_value is not None:
+                _LOGGER.debug("Warm-up successful on attempt %d, device is responding", attempt + 1)
+                warmup_success = True
+                break
+            _LOGGER.debug("Warm-up attempt %d failed, waiting 500ms...", attempt + 1)
+            time.sleep(0.5)
+        
+        if not warmup_success:
+            _LOGGER.warning("Device warm-up failed after 5 attempts, detection may fail")
         
         # Try each firmware detection set
         for detection_set in detection_sets:
