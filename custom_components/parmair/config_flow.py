@@ -6,6 +6,7 @@ import time
 from typing import Any
 
 import voluptuous as vol
+import pymodbus
 from pymodbus.client import ModbusTcpClient
 
 from homeassistant import config_entries
@@ -95,7 +96,9 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         detected_firmware_registers = None  # Track which address set worked
         detected_machine_type = None  # Track detected machine type value
         
-        _LOGGER.info("Starting device auto-detection...")
+        # Log pymodbus version for debugging
+        pymodbus_version = getattr(pymodbus, '__version__', 'unknown')
+        _LOGGER.info("Starting device auto-detection... (pymodbus version: %s)", pymodbus_version)
         
         # Longer initial delay after connection for device to stabilize during setup
         time.sleep(1.0)
@@ -121,31 +124,39 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         def _read_register(address: int) -> int | None:
             """Read a single register with pymodbus version compatibility."""
             try:
+                # Set the slave/unit ID on the client first (for all pymodbus versions)
+                _set_legacy_unit(client, data[CONF_SLAVE_ID])
+                
                 try:
-                    # Try modern pymodbus with keyword arguments
-                    result = client.read_holding_registers(
-                        address=address, count=1, slave=data[CONF_SLAVE_ID]
-                    )
+                    # Try modern pymodbus 3.x - only address as positional
+                    result = client.read_holding_registers(address, count=1)
                 except TypeError:
                     try:
-                        # Try with 'unit' instead of 'slave'
+                        # Try with slave keyword argument
                         result = client.read_holding_registers(
-                            address=address, count=1, unit=data[CONF_SLAVE_ID]
+                            address=address, count=1, slave=data[CONF_SLAVE_ID]
                         )
                     except TypeError:
-                        # Try older versions with positional + keyword
                         try:
+                            # Try with unit keyword argument
                             result = client.read_holding_registers(
-                                address, 1, unit=data[CONF_SLAVE_ID]
+                                address=address, count=1, unit=data[CONF_SLAVE_ID]
                             )
                         except TypeError:
                             try:
+                                # Try positional with unit keyword
                                 result = client.read_holding_registers(
-                                    address, 1, slave=data[CONF_SLAVE_ID]
+                                    address, 1, unit=data[CONF_SLAVE_ID]
                                 )
                             except TypeError:
-                                _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                                result = client.read_holding_registers(address, 1)
+                                try:
+                                    # Try positional with slave keyword
+                                    result = client.read_holding_registers(
+                                        address, 1, slave=data[CONF_SLAVE_ID]
+                                    )
+                                except TypeError:
+                                    # Try just positional arguments (legacy)
+                                    result = client.read_holding_registers(address, 1)
                 
                 # Check if read was successful
                 if result and not (hasattr(result, "isError") and result.isError()):

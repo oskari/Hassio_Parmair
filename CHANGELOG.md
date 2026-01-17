@@ -1,3 +1,12 @@
+## 0.9.11 - Pymodbus API Compatibility Fix (2026-01-18)
+
+### Fixed
+- Fixed pymodbus 3.x API compatibility: "takes 2 positional arguments but 3 were given"
+- Reordered API call attempts: tries modern `read_holding_registers(address, count=1)` first
+- Sets slave/unit ID on client before reads
+- Added pymodbus version logging for diagnostics
+- Register reads during detection now work correctly
+
 ## 0.9.10 - Function Order Fix (2026-01-18)
 
 ### Fixed
