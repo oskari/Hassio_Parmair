@@ -85,6 +85,7 @@ async def async_setup_entry(
         ParmairHumiditySensor(coordinator, entry, "humidity", "Humidity"),
         ParmairHumidity24hAvgSensor(coordinator, entry, "humidity_24h_avg", "Humidity 24h Average"),
         ParmairCO2Sensor(coordinator, entry, "co2", "CO2"),
+        ParmairCO2Sensor(coordinator, entry, "co2_exhaust", "CO2 Exhaust Air"),  # v2.xx only
         
         # Filter change date sensor
         ParmairFilterChangeDateSensor(coordinator, entry),

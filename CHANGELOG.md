@@ -1,3 +1,18 @@
+## 0.10.2 - Add Exhaust Air CO2 Sensor for v2.xx (2026-01-18)
+
+### Added
+- **Exhaust Air CO2 sensor (QE05_M)** for firmware v2.xx only
+  - Register 1026 (QE05_M) - Exhaust air CO2
+  - Complements existing Indoor air CO2 sensor (register 1030)
+  - Firmware v1.xx only has indoor CO2 at register 1031
+  - Sensor will show as unavailable on v1.xx devices (hardware not present)
+
+### Technical Details
+- Added REG_CO2_EXHAUST constant and register definition
+- Added to v2.xx register map and polling list
+- New sensor entity: "CO2 Exhaust Air"
+- Both CO2 sensors use the same ParmairCO2Sensor class
+
 ## 0.10.1 - Critical Heater Type Mapping Fix (2026-01-18)
 
 ### Fixed
