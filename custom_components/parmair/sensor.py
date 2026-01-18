@@ -20,7 +20,17 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, DEFAULT_NAME
+from .const import (
+    DOMAIN,
+    DEFAULT_NAME,
+    SOFTWARE_VERSION_2,
+    HEATER_TYPE_WATER_V1,
+    HEATER_TYPE_ELECTRIC_V1,
+    HEATER_TYPE_NONE_V1,
+    HEATER_TYPE_ELECTRIC_V2,
+    HEATER_TYPE_WATER_V2,
+    HEATER_TYPE_NONE_V2,
+)
 from .coordinator import ParmairCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -463,17 +473,30 @@ class ParmairPowerStateSensor(ParmairRegisterEntity, SensorEntity):
 
 
 class ParmairHeaterTypeSensor(ParmairRegisterEntity, SensorEntity):
-    """Representation of heater type with mapped values."""
+    """Representation of heater type with mapped values.
+    
+    NOTE: Heater type values are REVERSED between firmware versions!
+    v1.xx: 0=Water, 1=Electric, 2=None
+    v2.xx: 0=Electric, 1=Water, 2=None
+    """
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["Water", "Electric", "None"]
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    STATE_MAP = {
-        0: "Water",
-        1: "Electric",
-        2: "None"
+    # v1.xx mapping (register 1240)
+    STATE_MAP_V1 = {
+        HEATER_TYPE_WATER_V1: "Water",
+        HEATER_TYPE_ELECTRIC_V1: "Electric",
+        HEATER_TYPE_NONE_V1: "None"
+    }
+    
+    # v2.xx mapping (register 1127)
+    STATE_MAP_V2 = {
+        HEATER_TYPE_ELECTRIC_V2: "Electric",
+        HEATER_TYPE_WATER_V2: "Water",
+        HEATER_TYPE_NONE_V2: "None"
     }
 
     def __init__(
@@ -488,11 +511,19 @@ class ParmairHeaterTypeSensor(ParmairRegisterEntity, SensorEntity):
 
     @property
     def native_value(self) -> str | None:
-        """Return the sensor value."""
+        """Return the sensor value using correct mapping for firmware version."""
         raw_value = self.coordinator.data.get(self._data_key)
         if raw_value is None:
             return None
-        return self.STATE_MAP.get(raw_value, f"Unknown ({raw_value})")
+        
+        # Determine firmware version from software_version sensor
+        software_version = self.coordinator.data.get("software_version")
+        if software_version and software_version >= 2.0:
+            # v2.xx firmware uses reversed mapping
+            return self.STATE_MAP_V2.get(raw_value, f"Unknown ({raw_value})")
+        else:
+            # v1.xx firmware uses original mapping
+            return self.STATE_MAP_V1.get(raw_value, f"Unknown ({raw_value})")
 
 
 class ParmairBinarySensor(ParmairRegisterEntity, SensorEntity):

@@ -1,3 +1,17 @@
+## 0.10.1 - Critical Heater Type Mapping Fix (2026-01-18)
+
+### Fixed
+- **CRITICAL: Heater type detection for firmware 2.xx** - Values are reversed compared to 1.xx
+  - Firmware 1.xx (register 1240): 0=Water, 1=Electric, 2=None
+  - Firmware 2.xx (register 1127): 0=Electric, 1=Water, 2=None
+  - Integration now correctly interprets heater type based on firmware version
+  - v2.xx devices with electric heaters will now show "Electric" instead of incorrectly showing "Water"
+
+### Technical Details
+- Added separate heater type constants for v1 and v2 in const.py
+- Updated ParmairHeaterTypeSensor to dynamically select correct mapping based on software_version
+- Updated documentation (MODBUS_REGISTERS_1XX.md and MODBUS_REGISTERS_2XX.md) with correct value mappings
+
 ## 0.10.0 - Code Cleanup (2026-01-18)
 
 ### Changed

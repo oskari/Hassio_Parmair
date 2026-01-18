@@ -23,10 +23,21 @@ SOFTWARE_VERSION_1 = "1.x"
 SOFTWARE_VERSION_2 = "2.x"
 SOFTWARE_VERSION_UNKNOWN = "unknown"
 
-# Heater types (from HEAT_RADIATOR_TYPE register 1240)
-# 0 = Water heater (Vesipatteri)
-# 1 = Electric heater (Sähköpatteri)  
-# 2 = No heater
+# Heater types - NOTE: Values are REVERSED between firmware versions!
+# Firmware 1.xx (register 1240): 0=Water, 1=Electric, 2=None
+# Firmware 2.xx (register 1127): 0=Electric, 1=Water, 2=None
+
+# v1.xx heater type values
+HEATER_TYPE_WATER_V1 = 0
+HEATER_TYPE_ELECTRIC_V1 = 1
+HEATER_TYPE_NONE_V1 = 2
+
+# v2.xx heater type values
+HEATER_TYPE_ELECTRIC_V2 = 0
+HEATER_TYPE_WATER_V2 = 1
+HEATER_TYPE_NONE_V2 = 2
+
+# Legacy constants (v1.xx mapping for backward compatibility)
 HEATER_TYPE_WATER = 0
 HEATER_TYPE_ELECTRIC = 1
 HEATER_TYPE_NONE = 2
