@@ -67,7 +67,7 @@ async def async_setup_entry(
             coordinator,
             entry,
             "Boost Mode",
-            "mdi:fan-speed-3",
+            "mdi:fan-plus",
             "Activates boost ventilation mode",
         ),
         ParmairOverpressureSwitch(

@@ -327,7 +327,7 @@ def _build_registers_v2() -> Dict[str, RegisterDefinition]:
         # Optional sensors
         REG_HUMIDITY: RegisterDefinition(REG_HUMIDITY, 1025, "ME05_M", optional=True),
         REG_HUMIDITY_24H_AVG: RegisterDefinition(REG_HUMIDITY_24H_AVG, 1192, "ME05_AVG_FM", scale=0.1, optional=True),
-        REG_CO2_EXHAUST: RegisterDefinition(REG_CO2_EXHAUST, 1026, "QE05_M", optional=True),  # MAC 2 only - combination sensor
+        REG_CO2_EXHAUST: RegisterDefinition(REG_CO2_EXHAUST, 1026, "QE05_M"),  # MAC 2 standard sensor (v2.xx)
         
         # Alarm registers
         REG_ALARM_COUNT: RegisterDefinition(REG_ALARM_COUNT, 1004, "ALARM_COUNT"),

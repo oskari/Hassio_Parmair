@@ -1,3 +1,15 @@
+## 0.10.7 - Bug Fix: CO2 Sensor Updates (2026-01-23)
+
+### Fixed
+- **CO2 exhaust sensor (v2.xx) now updates continuously**
+  - Removed `optional=True` flag from QE05_M register (address 1026)
+  - Sensor was stopping updates after 30 minutes when device returned -1 during calibration
+  - Now treats all values as valid readings, maintaining continuous updates
+  - Only affects v2.xx devices (MAC 2 combination sensor)
+
+### Changed
+- Updated boost mode icon from `mdi:fan-speed-3` to `mdi:fan-plus` for better clarity
+
 ## 0.10.6 - Terminology Correction (2026-01-23)
 
 ### Changed
