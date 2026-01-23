@@ -1,3 +1,18 @@
+## 0.10.6 - Terminology Correction (2026-01-23)
+
+### Changed
+- **Corrected terminology: Firmware → Software**
+  - MULTI_SW_VER is SOFTWARE version, not firmware
+  - Changed all user-facing labels from "Firmware" to "Software"
+  - Config flow now says "Software 1.xx" and "Software 2.xx"
+  - Device info displays as "sw_version" (Software version)
+  - Both v1.xx and v2.xx use the same MULTI_SW_VER register
+
+### Technical
+- Updated strings.json and translation files
+- Updated config_flow.py labels
+- No functional changes - terminology fix only
+
 ## 0.10.5 - CO2 Sensor Cleanup (2026-01-23)
 
 ### Removed

@@ -400,7 +400,7 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_manual_version(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle manual firmware version selection when auto-detection fails."""
+        """Handle manual software version selection when auto-detection fails."""
         if user_input is not None:
             # Combine stored connection info with manual selections
             final_data = {**self._user_input, **user_input}
@@ -416,8 +416,8 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="manual_version",
             data_schema=vol.Schema({
                 vol.Required(CONF_SOFTWARE_VERSION, default=SOFTWARE_VERSION_1): vol.In({
-                    SOFTWARE_VERSION_1: "Firmware 1.xx",
-                    SOFTWARE_VERSION_2: "Firmware 2.xx",
+                    SOFTWARE_VERSION_1: "Software 1.xx",
+                    SOFTWARE_VERSION_2: "Software 2.xx",
                 }),
                 vol.Required(CONF_HEATER_TYPE, default=HEATER_TYPE_NONE): vol.In({
                     HEATER_TYPE_NONE: "None",
@@ -426,6 +426,6 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }),
             }),
             description_placeholders={
-                "info": "Auto-detection failed. Please select your device's firmware version and heater type manually.",
+                "info": "Auto-detection failed. Please select your device's software version and heater type manually.",
             },
         )

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect to Parmair MAC",
-        "description": "Enter the connection details for your Parmair MAC ventilation system. Hardware model and firmware version will be auto-detected. Current version: {version}. Detected: {model} (Firmware: {firmware}).",
+        "description": "Enter the connection details for your Parmair MAC ventilation system. Hardware model and software version will be auto-detected. Current version: {version}. Detected: {model} (Software: {firmware}).",
         "data": {
           "host": "IP Address",
           "port": "Port",
@@ -12,10 +12,10 @@
         }
       },
       "manual_version": {
-        "title": "Select Firmware Version",
-        "description": "Auto-detection failed to determine your device's firmware version. Please select your Parmair device's firmware version and heater type manually. Check your device's display or manual for the firmware version.",
+        "title": "Select Software Version",
+        "description": "Auto-detection failed to determine your device's software version. Please select your Parmair device's software version and heater type manually. Check your device's display or manual for the software version.",
         "data": {
-          "software_version": "Firmware Version",
+          "software_version": "Software Version",
           "heater_type": "Heater Type"
         }
       }

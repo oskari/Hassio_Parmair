@@ -13,10 +13,10 @@
         }
       },
       "manual_version": {
-        "title": "Select Firmware Version",
-        "description": "Auto-detection failed. Please manually select your device's firmware version and heater type. Check your device's display or manual for the firmware version.",
+        "title": "Select Software Version",
+        "description": "Auto-detection failed. Please manually select your device's software version and heater type. Check your device's display or manual for the software version.",
         "data": {
-          "software_version": "Firmware Version",
+          "software_version": "Software Version",
           "heater_type": "Heater Type"
         }
       }
