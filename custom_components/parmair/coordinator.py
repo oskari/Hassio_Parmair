@@ -28,6 +28,7 @@ from .const import (
     REGISTERS,
     SOFTWARE_VERSION_1,
     SOFTWARE_VERSION_UNKNOWN,
+    STATIC_REGISTER_KEYS,
     RegisterDefinition,
     get_register_definition,
     get_registers_for_version,
@@ -65,11 +66,22 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Get version-specific register map
         self._registers = get_registers_for_version(self.software_version)
         
+        # Separate static and dynamic register lists
+        self._static_registers: list[RegisterDefinition] = [
+            self._registers[key]
+            for key in STATIC_REGISTER_KEYS
+            if key in self._registers
+        ]
+        
         self._poll_registers: list[RegisterDefinition] = [
             self._registers[key]
             for key in POLLING_REGISTER_KEYS
             if key in self._registers
         ]
+        
+        # Storage for static data (read once)
+        self._static_data: dict[str, Any] = {}
+        self._static_data_read = False
 
         self._client = ModbusTcpClient(host=self.host, port=self.port)
         self._lock = threading.Lock()
@@ -107,10 +119,26 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Longer delay after connect to allow device to stabilize and clear buffers
             time.sleep(0.3)
             
+            # Read static registers once on first poll
+            if not self._static_data_read:
+                _LOGGER.info("Reading static device information (one-time read)")
+                for definition in self._static_registers:
+                    value = self._read_register_value(definition)
+                    if value is not None:
+                        self._static_data[definition.key] = value
+                        _LOGGER.debug(
+                            "Static register %s: %s",
+                            definition.label,
+                            value,
+                        )
+                    time.sleep(0.2)
+                self._static_data_read = True
+            
             data: dict[str, Any] = {}
             failed_registers = []
 
             try:
+                # Read dynamic registers on every poll
                 for definition in self._poll_registers:
                     value = self._read_register_value(definition)
                     if value is None:
@@ -127,11 +155,15 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         ", ".join(failed_registers),
                     )
                 
+                # Merge static data with dynamic data
+                data.update(self._static_data)
+                
                 _LOGGER.debug(
-                    "Read data from Parmair %s: %d values - %s",
+                    "Read data from Parmair %s: %d values (%d static, %d dynamic)",
                     self.host,
                     len(data),
-                    data,
+                    len(self._static_data),
+                    len(data) - len(self._static_data),
                 )
                 return data
                 

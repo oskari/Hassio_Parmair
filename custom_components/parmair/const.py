@@ -389,11 +389,15 @@ def get_registers_for_version(software_version: str) -> Dict[str, RegisterDefini
 # Build the default register map (v1)
 REGISTERS = _build_registers_v1()
 
-# Ordered list of registers to poll on each update.
+# Static registers (read once at startup - values don't change during operation)
+STATIC_REGISTER_KEYS = (
+    REG_SOFTWARE_VERSION,  # Software version never changes
+    REG_HARDWARE_TYPE,     # Hardware model (80/100/150) never changes
+    REG_HEATER_TYPE,       # Heater type (water/electric) rarely changes
+)
+
+# Dynamic registers (polled regularly - values change during operation)
 POLLING_REGISTER_KEYS = (
-    REG_SOFTWARE_VERSION,
-    REG_HARDWARE_TYPE,
-    REG_HEATER_TYPE,
     REG_POWER,
     REG_CONTROL_STATE,
     REG_ACTUAL_SPEED,
