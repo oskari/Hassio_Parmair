@@ -1,3 +1,24 @@
+## 0.10.8 - Performance Optimization (2026-01-23)
+
+### Optimized
+- **Static device information read only once**
+  - Software version, hardware type, and heater type now cached after first read
+  - These values never change during normal operation
+  - Reduces polling time by ~0.6 seconds (3 registers × 0.2s delay)
+  - Decreases unnecessary Modbus traffic
+
+### Technical
+- Separated `STATIC_REGISTER_KEYS` from `POLLING_REGISTER_KEYS` in const.py
+- Static data read once on first poll and cached in `_static_data`
+- Dynamic data merged with cached static data on each poll
+- Improved logging shows static vs dynamic register counts
+
+### Impact
+- First poll takes same time (reads all data)
+- Subsequent polls ~10% faster
+- Less stress on Parmair device Modbus interface
+- All functionality remains unchanged
+
 ## 0.10.7 - Bug Fix: CO2 Sensor Updates (2026-01-23)
 
 ### Fixed
