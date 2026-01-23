@@ -2,7 +2,7 @@
 
 ### Fixed
 - **CO2 exhaust sensor (v2.xx) now updates continuously**
-  - Removed `optional=True` flag from QE05_M register (address 1026)
+  - Removed `optional=True` flag from QE05_M register
   - Sensor was stopping updates after 30 minutes when device returned -1 during calibration
   - Now treats all values as valid readings, maintaining continuous updates
   - Only affects v2.xx devices (MAC 2 combination sensor)
@@ -29,13 +29,13 @@
 
 ### Removed
 - **Removed external CO2 sensor (QE20_M)** - This is optional external hardware not included in any device as standard
-  - Register 1031 (v1.xx) and 1030 (v2.xx) no longer monitored
+  - External CO2 sensor no longer monitored
   - Was showing as unavailable on all devices anyway
 
 ### Changed
 - **Clarified exhaust CO2 sensor** - Only for MAC 2 devices (newest v2.xx)
-  - QE05_M at register 1026 - Combination sensor in exhaust duct
-  - Only available in newest MAC 2 devices with v2.xx firmware
+  - QE05_M combination sensor in exhaust duct
+  - Only available in newest MAC 2 devices with v2.xx software
   - Older devices will not have this sensor (graceful unavailable state)
 
 ### Technical
@@ -52,8 +52,8 @@
 
 ### Technical
 - Added conditional sensor creation based on register availability
-- Exhaust CO2 sensor (register 1026/QE05_M) only exists in firmware v2.xx
-- v1.xx firmware only has indoor CO2 sensor (register 1031/QE20_M)
+- Exhaust CO2 sensor (QE05_M) only exists in software v2.xx
+- v1.xx software does not include exhaust CO2 sensor
 
 ## 0.10.3 - HACS Compatibility Fix (2026-01-18)
 
@@ -68,10 +68,9 @@
 ## 0.10.2 - Add Exhaust Air CO2 Sensor for v2.xx (2026-01-18)
 
 ### Added
-- **Exhaust Air CO2 sensor (QE05_M)** for firmware v2.xx only
-  - Register 1026 (QE05_M) - Exhaust air CO2
-  - Complements existing Indoor air CO2 sensor (register 1030)
-  - Firmware v1.xx only has indoor CO2 at register 1031
+- **Exhaust Air CO2 sensor (QE05_M)** for software v2.xx only
+  - Exhaust air CO2 combination sensor
+  - Only available on MAC 2 devices with v2.xx software
   - Sensor will show as unavailable on v1.xx devices (hardware not present)
 
 ### Technical Details
@@ -83,10 +82,10 @@
 ## 0.10.1 - Critical Heater Type Mapping Fix (2026-01-18)
 
 ### Fixed
-- **CRITICAL: Heater type detection for firmware 2.xx** - Values are reversed compared to 1.xx
-  - Firmware 1.xx (register 1240): 0=Water, 1=Electric, 2=None
-  - Firmware 2.xx (register 1127): 0=Electric, 1=Water, 2=None
-  - Integration now correctly interprets heater type based on firmware version
+- **CRITICAL: Heater type detection for software 2.xx** - Values are reversed compared to 1.xx
+  - Software 1.xx: 0=Water, 1=Electric, 2=None
+  - Software 2.xx: 0=Electric, 1=Water, 2=None
+  - Integration now correctly interprets heater type based on software version
   - v2.xx devices with electric heaters will now show "Electric" instead of incorrectly showing "Water"
 
 ### Technical Details
@@ -133,11 +132,11 @@
 ## 0.9.0.9 - Detection Warm-up + Manual Fallback (2026-01-18)
 
 ### Added
-- **Connection Warm-up**: Read power register (1001) 5 times with 500ms delays before detection
+- **Connection Warm-up**: Read power state register 5 times with 500ms delays before detection
   - "Wakes up" device so it's ready to respond to version detection reads
   - Addresses issue where device needs time after connection to respond
-- **Manual Firmware Selection**: If auto-detection fails, user can manually select:
-  - Firmware version (1.xx or 2.xx)
+- **Manual Software Selection**: If auto-detection fails, user can manually select:
+  - Software version (1.xx or 2.xx)
   - Heater type (None, Water, Electric)
   - New configuration step with dropdown menus
   - No more forced defaults
@@ -145,13 +144,13 @@
 ### Changed
 - Detection now has two-phase approach:
   1. Warm-up: Read universal register repeatedly until device responds
-  2. Version detection: Try firmware 2.xx then 1.xx with consensus method
+  2. Version detection: Try software 2.xx then 1.xx with consensus method
 - If detection fails, shows manual selection form instead of defaulting to 1.xx
 
 ### Fixed
 - Devices that don't respond immediately after connection can now be configured
-- Users with firmware 2.xx devices can now manually specify version if auto-detection fails
-- No more silent defaulting to wrong firmware version
+- Users with software 2.xx devices can now manually specify version if auto-detection fails
+- No more silent defaulting to wrong software version
 
 ### User Experience
 - If auto-detection succeeds: Same as before, seamless setup
