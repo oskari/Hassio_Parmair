@@ -178,8 +178,9 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
     def native_value(self) -> int | None:
         """Return the sensor value."""
         value = self.coordinator.data.get(self._data_key)
-        # 0 or 65535 (0xFFFF) or -1 indicates sensor not installed
-        if value in (0, 65535, -1, None):
+        # 0 or 65535 (0xFFFF) indicates sensor not installed
+        # -1 is returned during calibration, display as-is
+        if value in (0, 65535, None):
             return None
         return value
 
@@ -187,7 +188,7 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
     def device_class(self) -> str | None:
         """Return device class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
-        if value in (0, 65535, -1, None):
+        if value in (0, 65535, None):
             return None
         return SensorDeviceClass.HUMIDITY
 
@@ -195,7 +196,7 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
     def state_class(self) -> str | None:
         """Return state class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
-        if value in (0, 65535, -1, None):
+        if value in (0, 65535, None):
             return None
         return SensorStateClass.MEASUREMENT
 
@@ -265,8 +266,9 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
     def native_value(self) -> int | None:
         """Return the sensor value."""
         value = self.coordinator.data.get(self._data_key)
-        # 0 or 65535 (0xFFFF) or -1 indicates sensor not installed
-        if value in (0, 65535, -1, None):
+        # 0 or 65535 (0xFFFF) indicates sensor not installed
+        # -1 is returned during calibration, display as-is
+        if value in (0, 65535, None):
             return None
         return value
 
@@ -274,7 +276,7 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
     def device_class(self) -> str | None:
         """Return device class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
-        if value in (0, 65535, -1, None):
+        if value in (0, 65535, None):
             return None
         return SensorDeviceClass.CO2
 
@@ -282,7 +284,7 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
     def state_class(self) -> str | None:
         """Return state class only if sensor is installed."""
         value = self.coordinator.data.get(self._data_key)
-        if value in (0, 65535, -1, None):
+        if value in (0, 65535, None):
             return None
         return SensorStateClass.MEASUREMENT
 

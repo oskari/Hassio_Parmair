@@ -1,3 +1,19 @@
+## 0.10.12 - Sensor Update Fix (2026-01-25)
+
+### Fixed
+- **CO2 and humidity sensors now update continuously (for real this time)**
+  - Fixed sensor entity classes that were filtering out -1 values
+  - v0.10.9 removed optional flag from register definitions, but sensor classes still rejected -1
+  - Sensors will now display -1 during calibration cycles instead of becoming unavailable
+  - This was the actual root cause preventing continuous updates
+  - Tested: sensors update every 30 seconds even when device returns -1
+
+### Technical Details
+- Changed `ParmairHumiditySensor` and `ParmairCO2Sensor` classes
+- Removed `-1` from sensor value validation checks
+- `-1` is a normal calibration state, not missing hardware
+- Only `0` and `65535` now indicate sensor not installed
+
 ## 0.10.11 - Simplified Configuration (2026-01-25)
 
 ### Changed
