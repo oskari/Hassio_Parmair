@@ -1,3 +1,12 @@
+## 0.10.11 - Simplified Configuration (2026-01-25)
+
+### Changed
+- **Removed Modbus Slave ID configuration option**
+  - Slave ID is now always set to 0 (Parmair devices use unit 0)
+  - Simplified setup - no need to configure slave ID during installation
+  - Homes typically have only one Parmair ventilation system
+  - Reduces configuration complexity and potential errors
+
 ## 0.10.10 - Manifest Fix (2026-01-25)
 
 ### Fixed
