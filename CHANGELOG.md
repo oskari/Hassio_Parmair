@@ -1,3 +1,20 @@
+## 0.10.14 - Modbus Communication Fix (2026-01-27)
+
+### Fixed
+- **Fixed "request ask for id=1 but got id=0" Modbus error**
+  - Explicitly pass slave/unit parameter to all pymodbus 3.x API calls
+  - Previously relied on setting unit ID on client object, which wasn't always respected
+  - Now passes `slave=0` parameter directly to `read_holding_registers` and `write_register`
+  - Eliminates "Skipping" errors in logs from unit ID mismatches
+  - Affects both coordinator.py (data polling) and config_flow.py (setup/detection)
+
+### Technical Details
+- pymodbus 3.x requires explicit `slave` parameter in read/write calls
+- Setting `client.slave` attribute is not sufficient for all operations
+- Changed all `read_holding_registers()` calls to include `slave=self.slave_id`
+- Changed all `write_register()` calls to include `slave=self.slave_id`
+- Ensures consistent communication with Parmair devices (which use unit ID 0)
+
 ## 0.10.13 - LTO Heat Recovery Sensor (2026-01-25)
 
 ### Added
