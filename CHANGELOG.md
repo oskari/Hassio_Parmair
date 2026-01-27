@@ -1,17 +1,17 @@
-## 0.10.15 - Modbus Parameter Name Fix (2026-01-27)
+## 0.10.15 - Modbus Parameter Name Fix (2026-01-27) [BROKEN - DO NOT USE]
 
-### Fixed
-- **Fixed "unexpected keyword argument 'slave'" error**
-  - pymodbus 3.x uses `unit` parameter, not `slave`
-  - Changed all `read_holding_registers()` and `write_register()` calls to use `unit=`
-  - v0.10.14 used incorrect parameter name causing integration to break
-
-### Technical Details
-- pymodbus 3.x API: `read_holding_registers(address, count, unit=id)`
-- Previous attempt used `slave=` which doesn't exist in pymodbus 3.x
-- Correct parameter is `unit=` for specifying Modbus unit/slave ID
+### Note
+- **This version is broken - use v0.10.13 instead**
+- Attempted to use `unit` parameter which is also not supported
+- pymodbus 3.x doesn't accept keyword arguments for unit ID
+- Must rely on setting client.slave attribute instead
 
 ## 0.10.14 - Modbus Communication Fix (2026-01-27) [BROKEN - DO NOT USE]
+
+### Note
+- **This version is broken - use v0.10.13 instead**
+- Attempted to use `slave` parameter which doesn't exist in pymodbus 3.x
+- Caused "unexpected keyword argument 'slave'" errors
 
 ### Fixed
 - **Fixed "request ask for id=1 but got id=0" Modbus error**

@@ -191,8 +191,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 raw_value = self._to_raw(definition, value)
                 
-                # Write using pymodbus 3.x API - explicitly pass unit parameter
-                result = self._client.write_register(definition.address, raw_value, unit=self.slave_id)
+                # Write using pymodbus 3.x API
+                result = self._client.write_register(definition.address, raw_value)
                 
                 _LOGGER.debug(
                     "Wrote %s to register %s (%d): raw=%d",
@@ -260,9 +260,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
         """Read and scale a single register with pymodbus 3.x."""
         try:
-            # Read using pymodbus 3.x API - explicitly pass unit parameter
+            # Read using pymodbus 3.x API (unit ID already set on client)
             result = self._client.read_holding_registers(
-                address=definition.address, count=1, unit=self.slave_id
+                address=definition.address, count=1
             )
             
             if not result or (hasattr(result, "isError") and result.isError()):
