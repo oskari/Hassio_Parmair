@@ -125,8 +125,8 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                 # Set the unit ID on the client
                 _set_unit_id(client, data[CONF_SLAVE_ID])
                 
-                # Read using pymodbus 3.x API - explicitly pass slave/unit parameter
-                result = client.read_holding_registers(address, count=1, slave=data[CONF_SLAVE_ID])
+                # Read using pymodbus 3.x API - explicitly pass unit parameter
+                result = client.read_holding_registers(address, count=1, unit=data[CONF_SLAVE_ID])
                 
                 # Check if read was successful
                 if result and not (hasattr(result, "isError") and result.isError()):
@@ -311,8 +311,8 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             # Set unit ID on client
             _set_unit_id(client, data[CONF_SLAVE_ID])
             
-            # Read using pymodbus 3.x API - explicitly pass slave/unit parameter
-            result = client.read_holding_registers(power_register.address, count=1, slave=data[CONF_SLAVE_ID])
+            # Read using pymodbus 3.x API - explicitly pass unit parameter
+            result = client.read_holding_registers(power_register.address, count=1, unit=data[CONF_SLAVE_ID])
             
             return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
