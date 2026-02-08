@@ -1,215 +1,259 @@
-# Parmair MAC - Home Assistant Integration v0.11.2
+# Parmair MAC for Home Assistant
 
 ![Parmair MAC Logo](parmair_logo.jpg)
 
-A custom Home Assistant integration for Parmair MAC ventilation systems via Modbus TCP communication.
+**Control your Parmair ventilation system from Home Assistant.**
 
-## Latest Updates (v0.11.2)
+Perfect for creating smart automations, monitoring air quality, and managing your home's ventilation from anywhere.
 
-**CRITICAL FIX**: Humidity and CO2 sensors now update continuously! This release removes all value filtering that was causing sensors to stop updating after ~30 minutes. Sensors now behave identically to temperature sensors - displaying all values including 0 and -1, with continuous updates every 30 seconds.
+---
 
-## Features
+## What You Can Do
 
-- **Fan Control**: Control your Parmair ventilation unit including:
-  - Power on/off
-  - Mode selection (Away, Home, Boost)
-  - Speed control via presets
+✅ **Control ventilation modes** - Switch between Home, Away, and Boost  
+✅ **Monitor air quality** - Track temperature, humidity, and CO2 levels  
+✅ **Create automations** - Schedule ventilation based on time, occupancy, or air quality  
+✅ **Get notifications** - Alerts when filters need changing or alarms occur  
+✅ **Adjust settings remotely** - Change fan speeds and temperature targets from anywhere  
 
-- **Number Controls**: Adjust ventilation settings:
-  - Home Speed Preset (0-4)
-  - Away Speed Preset (0-4)
-  - Boost Setting (2-4)
-  - Exhaust Temperature Setpoint (18-26°C)
-  - Supply Temperature Setpoint (15-25°C)
+---
 
-- **Switch Controls**: Toggle system features:
-  - Summer Mode Enable/Disable
-  - Time Program Enable/Disable
-  - Heater Enable/Disable
-  - Boost Mode (high-speed ventilation)
-  - Overpressure Mode (supply-only ventilation)
+## Quick Start
 
-- **Action Buttons**: One-click actions:
-  - Acknowledge Alarms
-  - Mark Filter as Replaced
-  
-- **Temperature Monitoring**: Real-time monitoring of:
-  - Fresh air temperature
-  - Supply air temperature  
-  - Exhaust air temperature
-  - Waste air temperature
-  - Temperature setpoints
-  
-- **Additional Sensors** (if available):
-  - Humidity
-  - CO2 levels
-  - Alarm status
-  - Boost timer
-  - Software version (Multi24 controller)
-  - Diagnostic information in entity attributes
-  
-- **Local Polling**: Direct communication with your device via Modbus TCP
-- **Automatic Model Detection**: Reads hardware type to identify MAC80/MAC100/MAC150 automatically
-- **Software Version Detection**: Automatically detects software version (1.x or 2.x) for optimal register mapping
+### Installation (3 Steps)
 
-## System Information
+**1. Add to HACS**
+- Open HACS → Click ⋮ (top right) → Custom repositories
+- Add: `https://github.com/ValtteriAho/Hassio_Parmair`
+- Category: Integration → Add
+- Find "Parmair MAC" → Download
+- Restart Home Assistant
 
-This integration supports Parmair "My Air Control" (MAC) ventilation systems:
-- **Software 1.x**: Older MAC models (pre-2023) - Modbus spec 1.87
-- **Software 2.x**: Newer MAC 2 and updated controllers (2023+) - Modbus spec 2.28
+**2. Find Your Device IP**
+- Check your router's connected devices list
+- Look for "Parmair" or "MAC" device
+- Note the IP address (e.g., 192.168.1.100)
 
-### Requirements
-- Home Assistant 2023.1 or newer
-- Parmair MAC device with Modbus TCP enabled
-- Network connectivity between Home Assistant and the device
-- Device IP address and Modbus slave ID (typically 0)
+**3. Add Integration**
+- Settings → Devices & Services → Add Integration
+- Search "Parmair MAC"
+- Enter your device's IP address
+- Click Submit → Done!
 
-## Installation
+> 💡 **That's it!** The integration automatically detects your device model, software version, and available features.
 
-### HACS Installation (Recommended)
-
-1. Open HACS in Home Assistant
-2. Click the 3 dots in the top right corner
-3. Select "Custom repositories"
-4. Add this repository URL: `https://github.com/ValtteriAho/Hassio_Parmair`
-5. Select category: "Integration"
-6. Click "Add"
-7. Find "Parmair MAC" in HACS and click "Download"
-8. Restart Home Assistant
-9. Go to Settings → Devices & Services → Add Integration
-10. Search for "Parmair MAC"
-11. Enter your device's connection details:
-    - IP Address
-    - Port (default: 502)
-    - Modbus Slave ID (default: 0)
-    - Polling Interval (default: 30 seconds)
-    - Name (optional)
-
-Hardware model and software version will be auto-detected from the device. If auto-detection fails, you can manually select software version and heater type.
-
-## Configuration
-
-The integration is configured through the Home Assistant UI. You'll need:
-
-- **IP Address**: The IP address of your Parmair device
-- **Port**: The Modbus TCP port (typically 502)
-- **Slave ID**: The Modbus slave ID of your device (typically 0)
-
-The hardware model (MAC80/MAC100/MAC150) and software version (1.x/2.x) are automatically detected. If detection fails during setup, you can manually select your software version and heater type.
-
-## Entities Created
-
-### Fan Entity
-- **Parmair MAC** (`fan.parmair_mac`): Main control for the ventilation system
-  - Presets: Away, Home, Boost
-  - Speed control (percentage based on preset)
-  - Current speed displayed
-
-### Number Entities
-- **Home Speed Preset** (`number.parmair_mac_home_speed_preset`): Fan speed for Home mode (0-4)
-- **Away Speed Preset** (`number.parmair_mac_away_speed_preset`): Fan speed for Away mode (0-4)
-- **Boost Setting** (`number.parmair_mac_boost_setting`): Boost fan speed level (2-4)
-- **Boost Time Setting** (`number.parmair_mac_boost_time_setting`): Boost duration preset (30-180 min)
-- **Overpressure Time Setting** (`number.parmair_mac_overpressure_time_setting`): Overpressure duration preset (15-120 min)
-- **Exhaust Temperature Setpoint** (`number.parmair_mac_exhaust_temperature_setpoint`): Target exhaust air temperature (18-26°C)
-- **Supply Temperature Setpoint** (`number.parmair_mac_supply_temperature_setpoint`): Target supply air temperature (15-25°C)
-- **Summer Mode Temperature Limit** (`number.parmair_mac_summer_mode_temp_limit`): Temperature threshold for summer mode activation
-- **Filter Replacement Interval** (`number.parmair_mac_filter_replacement_interval`): Days between filter changes
-
-### Switch Entities
-- **Summer Mode** (`switch.parmair_mac_summer_mode`): Enable/disable summer mode operation
-- **Time Program** (`switch.parmair_mac_time_program`): Enable/disable scheduled time programs
-- **Heater Enable** (`switch.parmair_mac_post_heater`): Enable/disable heating element
-- **Boost Mode** (`switch.parmair_mac_boost_mode`): Activate high-speed ventilation with timer
-- **Overpressure Mode** (`switch.parmair_mac_overpressure_mode`): Activate supply-only ventilation with timer
-
-### Button Entities
-- **Acknowledge Alarms** (`button.parmair_mac_acknowledge_alarms`): Clear active alarms
-- **Filter Replaced** (`button.parmair_mac_filter_replaced`): Reset filter replacement counter
-
-### Select Entities
-- **Heater Type** (`select.parmair_mac_heater_type`): Configure heater type (None, Water, Electric)
-
-> **⚠️ Heater Control Warning:**
-> 
-> Disabling the heating elements entirely carries inherent risks and may void warranty coverage. While heating elements are the primary energy-consuming components in the ventilation system, they are essential for freeze protection and optimal operation.
-> 
-> When using external automation systems (such as Home Assistant) to override the device's built-in control logic, the manufacturer cannot accept liability for component failures or malfunctions that occur during the warranty period. Any damage resulting from modified heater control settings may not be covered under warranty.
-
-### Sensor Entities
-
-**Temperature Sensors:**
-- **Fresh Air Temperature** (`sensor.parmair_mac_fresh_air_temperature`): Outdoor air temperature
-- **Supply Air Temperature** (`sensor.parmair_mac_supply_air_temperature`): Air temperature being supplied to rooms
-- **Exhaust Air Temperature** (`sensor.parmair_mac_exhaust_air_temperature`): Air temperature being extracted
-- **Waste Air Temperature** (`sensor.parmair_mac_waste_air_temperature`): Air temperature being exhausted outside
-
-**State Sensors:**
-- **Control State** (`sensor.parmair_mac_control_state`): Current operating mode (Stop, Away, Home, Boost, Overpressure)
-- **Power State** (`sensor.parmair_mac_power_state`): Power status (Off, Shutting Down, Starting, Running)
-- **Current Speed** (`sensor.parmair_mac_current_speed`): Active fan speed (0-5)
-- **Boost Timer** (`sensor.parmair_mac_boost_timer`): Remaining boost time in minutes (-1 when inactive)
-- **Overpressure Timer** (`sensor.parmair_mac_overpressure_timer`): Remaining overpressure time in minutes (-1 when inactive)
-
-**Alarm Sensors:**
-- **Alarm Count** (`sensor.parmair_mac_alarm_count`): Number of active alarms
-- **Summary Alarm** (`sensor.parmair_mac_summary_alarm`): Overall alarm status
-- **Alarms State** (`sensor.parmair_mac_alarms_state`): Detailed alarm information
-
-**Optional Sensors** (if hardware is present):
-- **Humidity** (`sensor.parmair_mac_humidity`): Indoor humidity level (displays all values including 0%, updates continuously)
-- **Humidity 24h Average** (`sensor.parmair_mac_humidity_24h_avg`): Daily average humidity (displays all values including negatives)
-- **CO2 Exhaust Air** (`sensor.parmair_mac_co2_exhaust_air`): Exhaust air CO2 concentration (software 2.x only, MAC 2 devices, displays all values including -1 during calibration)
-
-**Diagnostic Sensors:**
-- **Software Version** (`sensor.parmair_mac_software_version`): Multi24 controller software version
-- **Hardware Type** (`sensor.parmair_mac_hardware_type`): Device model (80, 100, or 150)
-- **Heater Type** (`sensor.parmair_mac_heater_type`): Installed heater configuration
-
-## Performance
-
-The integration uses a **default polling interval of 30 seconds**, which balances responsiveness with device performance:
-
-- **Why 30 seconds?** The Parmair device has limited Modbus TCP processing capacity. More frequent polling can cause transaction conflicts.
-- **Sequential reads**: Registers are read one at a time with 200ms delays to prevent overwhelming the device
-- **Connection cycling**: The integration reconnects on each poll to clear stale responses
-- **Configurable**: You can adjust the polling interval during setup (10-120 seconds recommended)
-
-**Note**: If you see "transaction_id mismatch" errors in logs, the integration includes timing optimizations to handle these. They typically don't affect functionality.
+---
 
 ## Troubleshooting
 
-For developer documentation, see [CONTRIBUTING.md](CONTRIBUTING.md).
+### Can't Connect?
 
-### Connection Issues
-- Verify the IP address is correct and the device is on the same network
-- Check that Modbus TCP port is accessible (default port 502)
-- Confirm the Modbus slave ID matches your device configuration (typically 0 for Parmair devices)
-- If experiencing "transaction_id mismatch" errors, the integration includes timing optimizations
-- Default slave ID changed from 1 to 0 in v0.9.0.5 to match Parmair device responses
+**Check your IP address**
+- Make sure the IP is correct (check your router)
+- Device must be on the same network as Home Assistant
 
-### Missing Sensors
-- Some sensors (humidity, CO2) only appear if the hardware is installed
-- Check the device's Modbus configuration to ensure sensors are enabled
+**Still not working?**
+- Port: Should be `502` (usually auto-configured)
+- **Slave ID: Must be `0` (not 1!)** ← Most common issue!
+  - If you installed before February 2026, your Slave ID might be wrong
+  - Delete the integration and re-add it
 
-## Support
+### Sensors Not Updating?
 
-For issues, feature requests, or questions, please open an issue on GitHub.
+**Restart Home Assistant** after installing the integration.
 
-## Changelog
+**Some sensors missing?**
+- Humidity and CO2 sensors only appear if your device has that hardware
+- Check your Parmair device specifications
+
+**Sensors showing 0 or -1?**
+- This is normal! The device reports these values during calibration
+- Sensors update every 30 seconds
+- -1 means "calibrating" for CO2 sensors
+- 0% humidity is a valid reading
+
+### Need More Help?
+
+[Open an issue on GitHub](https://github.com/ValtteriAho/Hassio_Parmair/issues) with:
+- Your device model (MAC80/100/150)
+- Software version (visible in Home Assistant after setup)
+- What's not working
+
+---
+
+## What You Get
+
+Once installed, you'll have control over:
+
+### Main Controls
+- **Fan Entity** - Power on/off and mode switching (Away/Home/Boost)
+- **Speed Presets** - Set fan speeds for each mode (Home, Away, Boost)
+- **Temperature Targets** - Adjust supply and exhaust temperature setpoints
+- **Timers** - Control how long Boost and Overpressure modes run
+
+### Monitoring
+- **Temperatures** - Fresh air, supply, exhaust, and waste air
+- **Humidity** - Current level and 24-hour average (if equipped)
+- **CO2 Levels** - Exhaust air quality monitoring (if equipped)
+- **Operating Status** - Current mode, speed, and power state
+- **Alarms** - Active warnings and filter status
+
+### Smart Features
+- **Summer Mode** - Automatically adjusts ventilation based on outdoor temperature
+- **Time Programs** - Enable/disable scheduled operation
+- **Heater Control** - Manage heating elements (see warning below)
+- **Filter Tracking** - Monitor when filters need replacement
+
+> ⚠️ **Important**: Disabling heaters via automation may void your warranty. Heaters protect against freezing - only disable if you understand the risks.
+
+---
+
+## Example Automations
+
+### Boost When Cooking
+```yaml
+automation:
+  - alias: "Boost ventilation when cooking"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.kitchen_motion
+        to: "on"
+    action:
+      - service: fan.set_preset_mode
+        target:
+          entity_id: fan.parmair_mac
+        data:
+          preset_mode: "Boost"
+```
+
+### Away Mode When Nobody Home
+```yaml
+automation:
+  - alias: "Reduce ventilation when away"
+    trigger:
+      - platform: state
+        entity_id: group.all_persons
+        to: "not_home"
+        for: "00:30:00"
+    action:
+      - service: fan.set_preset_mode
+        target:
+          entity_id: fan.parmair_mac
+        data:
+          preset_mode: "Away"
+```
+
+### Filter Change Reminder
+```yaml
+automation:
+  - alias: "Remind to change filter"
+    trigger:
+      - platform: state
+        entity_id: sensor.parmair_mac_filter_status
+        to: "Replace"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Ventilation Filter"
+          message: "Time to change the air filter!"
+```
+
+---
+
+## Supported Devices
+
+- **MAC 80** - Apartment ventilation systems
+- **MAC 100** - Small house ventilation
+- **MAC 150** - Larger house ventilation
+- **MAC 2** - Newest models with enhanced sensors (software 2.x)
+
+Both old (software 1.x) and new (software 2.x) devices are supported. The integration automatically detects your version.
+
+---
+
+## Advanced Information
+
+<details>
+<summary>Complete Entity List (Click to expand)</summary>
+
+### Controls
+- Fan: Main power and mode control
+- Home Speed: Fan speed when in Home mode (0-4)
+- Away Speed: Fan speed when in Away mode (0-4)
+- Boost Speed: Fan speed level for Boost mode (2-4)
+- Boost Duration: How long Boost mode runs (30-180 min)
+- Overpressure Duration: How long Overpressure mode runs (15-120 min)
+- Exhaust Temperature: Target temperature for exhaust air (18-26°C)
+- Supply Temperature: Target temperature for supply air (15-25°C)
+- Summer Mode Temperature: Outdoor temp to trigger summer mode
+- Filter Interval: Days between filter changes (90/120/180)
+
+### Switches
+- Summer Mode: Enable/disable summer operation
+- Time Program: Enable/disable scheduled operation
+- Heater: Enable/disable heating elements
+- Boost Mode: Activate high-speed ventilation
+- Overpressure Mode: Supply-only ventilation (fireplace mode)
+
+### Buttons
+- Acknowledge Alarms: Clear active warnings
+- Filter Replaced: Reset filter change counter
+
+### Sensors
+All temperature sensors, humidity, CO2, operating states, timers, alarms, and diagnostic information.
+
+</details>
+
+<details>
+<summary>Technical Details (Click to expand)</summary>
+
+### Communication
+- Protocol: Modbus TCP
+- Default Port: 502
+- Slave ID: 0 (changed from 1 in v0.9.0.5)
+- Polling: Every 30 seconds (configurable 10-120s)
+
+### Requirements
+- Home Assistant 2023.1 or newer
+- Network connectivity to Parmair device
+- Modbus TCP must be enabled on device
+
+### Performance
+The integration reads registers sequentially with 200ms delays to prevent overwhelming the device. Updates occur every 30 seconds by default. More frequent polling may cause communication errors.
+
+### Version Detection
+The integration automatically reads:
+- Hardware model (MAC80/100/150)
+- Software version (1.x or 2.x)
+- Heater type (Water/Electric/None)
+- Available sensors (humidity, CO2)
+
+If auto-detection fails, you can manually select these during setup.
+
+</details>
+
+---
+
+## Version History
 
 See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
-## License
+**Latest:** v0.11.2 - Fixed humidity and CO2 sensors to update continuously (they were stopping after 30 minutes)
 
-MIT License
+---
+
+## Support & Contributing
+
+- **Issues or Questions**: [GitHub Issues](https://github.com/ValtteriAho/Hassio_Parmair/issues)
+- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
+- **License**: MIT
 
 ---
 
 ## Disclaimer
 
-This is an independent, personal project developed by a community member and is **not affiliated with, endorsed by, or supported by Parmair or its parent companies**. This integration is provided as-is, without any warranty or guarantee. The Parmair name and product references are used solely for identification purposes.
+⚠️ **Not Official**: This is an independent project, not affiliated with or endorsed by Parmair.
 
-For official support, product information, or warranty claims, please contact Parmair directly through their official channels.
+**Use at your own risk.** The author assumes no liability for damage, malfunction, or warranty voidance. For official support, contact Parmair directly.
 
-Use of this integration is at your own risk. The author assumes no liability for any damage, malfunction, or warranty voidance that may result from using this software with your Parmair ventilation system.
+Modifying heater control or other critical settings through automation may void your warranty. Understand the risks before disabling safety features.
