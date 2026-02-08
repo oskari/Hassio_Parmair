@@ -384,11 +384,11 @@ def get_registers_for_version(software_version: str) -> Dict[str, RegisterDefini
     Returns:
         Dictionary mapping register keys to RegisterDefinition objects
     """
-    # Check for v2.xx firmware (handles both "2.x" constant and "2.28" style versions)
+    # Check for firmware 2.00-2.99 range (handles both "2.x" constant and "2.28" actual versions)
     if software_version == SOFTWARE_VERSION_2 or software_version.startswith("2."):
         return _build_registers_v2()
     else:
-        # Default to v1 for 1.xx or unknown versions
+        # Default to v1 for firmware 1.00-1.99 or unknown versions
         return _build_registers_v1()
 
 
