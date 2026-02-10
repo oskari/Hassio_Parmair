@@ -14,7 +14,7 @@ CONF_SOFTWARE_VERSION = "software_version"
 CONF_HEATER_TYPE = "heater_type"
 
 DEFAULT_NAME = "Parmair MAC"
-DEFAULT_SCAN_INTERVAL = 30  # seconds
+DEFAULT_SCAN_INTERVAL = 60  # seconds
 DEFAULT_PORT = 502
 DEFAULT_SLAVE_ID = 0  # Parmair devices respond with unit ID 0
 

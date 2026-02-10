@@ -1,3 +1,14 @@
+## 0.11.4 - Improve Polling Stability (2026-02-10)
+
+### Changed
+- Increased default scan interval to 60s to reduce Modbus load
+- Added wake-up read of power register (1001) at start of each poll
+- Increased inter-read delays to 0.3s to prevent device read stalls
+
+### Why
+- Some devices update CO2/humidity only once after restart when polled too fast
+- Slower cadence and wake-up read keeps registers responsive between cycles
+
 ## 0.11.3 - Fix Version Detection (2026-02-08)
 
 ### Fixed

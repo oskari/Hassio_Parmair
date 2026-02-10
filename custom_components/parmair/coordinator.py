@@ -119,6 +119,13 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Longer delay after connect to allow device to stabilize and clear buffers
             time.sleep(0.3)
             
+            # Wake-up read: power register (1001) to keep device responsive
+            try:
+                _ = self._client.read_holding_registers(address=1001, count=1)
+            except Exception:
+                pass
+            time.sleep(0.3)
+
             # Read static registers once on first poll
             if not self._static_data_read:
                 _LOGGER.info("Reading static device information (one-time read)")
@@ -131,7 +138,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             definition.label,
                             value,
                         )
-                    time.sleep(0.2)
+                    time.sleep(0.3)
                 self._static_data_read = True
             
             data: dict[str, Any] = {}
@@ -146,7 +153,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         continue
                     data[definition.key] = value
                     # Longer delay between reads to prevent transaction ID conflicts
-                    time.sleep(0.2)
+                    time.sleep(0.3)
                 
                 if failed_registers:
                     _LOGGER.debug(
@@ -200,7 +207,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
                 
                 # Small delay after write to allow device to process
-                time.sleep(0.2)
+                time.sleep(0.3)
                 
                 return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
