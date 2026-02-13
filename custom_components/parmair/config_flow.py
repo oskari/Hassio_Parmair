@@ -422,3 +422,72 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "info": "Auto-detection failed. Please select your device's software version and heater type manually.",
             },
         )
+
+    @staticmethod
+    async def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow handler."""
+        return ParmairOptionsFlowHandler(config_entry)
+
+
+class ParmairOptionsFlowHandler(config_entries.OptionsFlowWithConfigEntry):
+    """Handle Parmair options (change host, port, name, scan interval, software version, heater type)."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        data = self.config_entry.data
+        options = self.config_entry.options or {}
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_HOST,
+                        default=options.get(CONF_HOST, data.get(CONF_HOST, "")),
+                    ): cv.string,
+                    vol.Required(
+                        CONF_PORT,
+                        default=options.get(CONF_PORT, data.get(CONF_PORT, DEFAULT_PORT)),
+                    ): cv.port,
+                    vol.Optional(
+                        CONF_NAME,
+                        default=options.get(CONF_NAME, data.get(CONF_NAME, DEFAULT_NAME)),
+                    ): cv.string,
+                    vol.Optional(
+                        CONF_SCAN_INTERVAL,
+                        default=options.get(
+                            CONF_SCAN_INTERVAL, data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                    vol.Required(
+                        CONF_SOFTWARE_VERSION,
+                        default=options.get(
+                            CONF_SOFTWARE_VERSION,
+                            data.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1),
+                        ),
+                    ): vol.In(
+                        {
+                            SOFTWARE_VERSION_1: "Software 1.xx",
+                            SOFTWARE_VERSION_2: "Software 2.xx",
+                        }
+                    ),
+                    vol.Required(
+                        CONF_HEATER_TYPE,
+                        default=options.get(
+                            CONF_HEATER_TYPE, data.get(CONF_HEATER_TYPE, HEATER_TYPE_NONE)
+                        ),
+                    ): vol.In(
+                        {
+                            HEATER_TYPE_NONE: "None",
+                            HEATER_TYPE_WATER: "Water",
+                            HEATER_TYPE_ELECTRIC: "Electric",
+                        }
+                    ),
+                }
+            ),
+        )

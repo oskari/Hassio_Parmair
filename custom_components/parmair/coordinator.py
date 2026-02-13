@@ -11,7 +11,7 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from pymodbus.client import ModbusTcpClient
@@ -87,11 +87,16 @@ def _build_read_ranges(
 class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Parmair data from Modbus."""
 
+    def _opt(self, key: str, default: Any) -> Any:
+        """Get config value from options with fallback to entry data."""
+        opts = self.entry.options or {}
+        return opts.get(key, self.entry.data.get(key, default))
+
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the coordinator."""
         self.entry = entry
-        self.host = entry.data[CONF_HOST]
-        self.port = entry.data.get(CONF_PORT, DEFAULT_PORT)
+        self.host = self._opt(CONF_HOST, entry.data.get(CONF_HOST, ""))
+        self.port = self._opt(CONF_PORT, DEFAULT_PORT)
         # Parmair devices use unit 0; default to 0 and treat legacy slave_id=1 as 0
         raw_slave_id = entry.data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
         if raw_slave_id == 1:
@@ -102,10 +107,11 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.slave_id = 0
         else:
             self.slave_id = raw_slave_id
-        self.software_version = entry.data.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
-        self.heater_type = entry.data.get(CONF_HEATER_TYPE, HEATER_TYPE_UNKNOWN)
+        # Prefer options (user-configured) over initial config
+        self.software_version = self._opt(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
+        self.heater_type = self._opt(CONF_HEATER_TYPE, HEATER_TYPE_UNKNOWN)
 
-        scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        scan_interval = self._opt(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
         # Get version-specific register map
         self._registers = get_registers_for_version(self.software_version)
@@ -342,7 +348,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         device_info = {
             "identifiers": {(DOMAIN, self.entry.entry_id)},
-            "name": self.entry.data.get("name", DEFAULT_NAME),
+            "name": self._opt(CONF_NAME, DEFAULT_NAME),
             "manufacturer": "Parmair",
             "model": model,
         }
