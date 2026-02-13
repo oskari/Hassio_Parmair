@@ -51,6 +51,36 @@ def _set_unit_id(client: ModbusTcpClient, unit_id: int) -> None:
         client.slave_id = unit_id
 
 
+def _build_read_ranges(
+    address_to_definitions: dict[int, list[RegisterDefinition]],
+    max_registers: int = 125,
+) -> list[tuple[int, int]]:
+    """Group addresses into consecutive spans for batch reads.
+
+    Args:
+        address_to_definitions: Maps address -> list of definitions using that address
+        max_registers: Max registers per Modbus request (Modbus limit is 125)
+
+    Returns:
+        List of (start_address, count) for each consecutive span
+    """
+    if not address_to_definitions:
+        return []
+    addresses = sorted(address_to_definitions.keys())
+    ranges: list[tuple[int, int]] = []
+    start = addresses[0]
+    count = 1
+    for prev, curr in zip(addresses[:-1], addresses[1:]):
+        if curr == prev + 1 and count < max_registers:
+            count += 1
+        else:
+            ranges.append((start, count))
+            start = curr
+            count = 1
+    ranges.append((start, count))
+    return ranges
+
+
 class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Parmair data from Modbus."""
 
@@ -109,7 +139,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if self._client.connected:
                 try:
                     self._client.close()
-                except:
+                except Exception:
                     pass  # Ignore close errors
             
             if not self._client.connect():
@@ -128,23 +158,31 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 pass
             time.sleep(0.3)
 
-            # Read static registers once on first poll
+            # Read static registers once on first poll (batched)
             if not self._static_data_read:
                 _LOGGER.info("Reading static device information (one-time read)")
+                static_addr_to_defs: dict[int, list[RegisterDefinition]] = {}
                 for definition in self._static_registers:
-                    value = self._read_register_value(definition)
-                    if value is not None:
-                        self._static_data[definition.key] = value
-                        _LOGGER.debug(
-                            "Static register %s: %s",
-                            definition.label,
-                            value,
-                        )
+                    static_addr_to_defs.setdefault(definition.address, []).append(definition)
+                for start_addr, span_count in _build_read_ranges(static_addr_to_defs):
+                    block = self._read_register_block(start_addr, span_count)
+                    if block is None:
+                        time.sleep(0.5)
+                        block = self._read_register_block(start_addr, span_count)
+                    if block is not None:
+                        for i, raw in enumerate(block):
+                            addr = start_addr + i
+                            if addr in static_addr_to_defs:
+                                for definition in static_addr_to_defs[addr]:
+                                    if definition.optional and raw < 0:
+                                        continue
+                                    self._static_data[definition.key] = self._from_raw(definition, raw)
+                                    _LOGGER.debug("Static register %s: %s", definition.label, self._static_data[definition.key])
                     time.sleep(0.3)
                 self._static_data_read = True
-            
+
             data: dict[str, Any] = {}
-            failed_registers = []
+            failed_registers: list[str] = []
 
             try:
                 # Group definitions by address to avoid duplicate reads (e.g. v2 USERSTATECONTROL)
@@ -152,16 +190,30 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 for definition in self._poll_registers:
                     address_to_definitions.setdefault(definition.address, []).append(definition)
 
-                # Read each unique address once, distribute value to all keys using it
-                for address, definitions in address_to_definitions.items():
-                    # Use first definition for scaling (shared addresses have same scale)
-                    value = self._read_register_value(definitions[0])
-                    if value is None:
-                        failed_registers.append(f"{definitions[0].label}({definitions[0].register_id})")
+                # Read in batched ranges, one Modbus request per consecutive span
+                for start_addr, span_count in _build_read_ranges(address_to_definitions):
+                    block = self._read_register_block(start_addr, span_count)
+                    if block is None:
+                        time.sleep(0.5)
+                        block = self._read_register_block(start_addr, span_count)
+                    if block is None:
+                        for addr in range(start_addr, start_addr + span_count):
+                            if addr in address_to_definitions:
+                                failed_registers.append(
+                                    f"{address_to_definitions[addr][0].label}({address_to_definitions[addr][0].register_id})"
+                                )
                         continue
-                    for definition in definitions:
-                        data[definition.key] = value
-                    # Longer delay between reads to prevent transaction ID conflicts
+                    for i, raw in enumerate(block):
+                        addr = start_addr + i
+                        if addr not in address_to_definitions:
+                            continue
+                        definitions = address_to_definitions[addr]
+                        first_def = definitions[0]
+                        if first_def.optional and raw < 0:
+                            continue
+                        value = self._from_raw(first_def, raw)
+                        for definition in definitions:
+                            data[definition.key] = value
                     time.sleep(0.3)
                 
                 if failed_registers:
@@ -204,7 +256,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # Always close after reading to prevent buffer buildup
                 try:
                     self._client.close()
-                except:
+                except Exception:
                     pass
 
     def write_register(self, key: str, value: float | int) -> bool:
@@ -292,6 +344,36 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def get_register_definition(self, key: str) -> RegisterDefinition:
         """Expose register metadata for other components."""
         return get_register_definition(key, self._registers)
+
+    def _read_register_block(self, address: int, count: int) -> list[int] | None:
+        """Read a block of consecutive registers. Returns raw values or None on failure."""
+        try:
+            result = self._client.read_holding_registers(
+                address=address, count=count
+            )
+            if not result or (hasattr(result, "isError") and result.isError()):
+                return None
+            if hasattr(result, "registers"):
+                raw_list = list(result.registers)
+            elif isinstance(result, (list, tuple)):
+                raw_list = list(result)
+            else:
+                return None
+            if len(raw_list) != count:
+                return None
+            # Convert to signed int16 where needed
+            out: list[int] = []
+            for raw in raw_list:
+                if raw > 32767:
+                    raw = raw - 65536
+                out.append(raw)
+            return out
+        except Exception as ex:
+            _LOGGER.warning(
+                "Exception reading block at address %d count %d: %s",
+                address, count, ex,
+            )
+            return None
 
     def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
         """Read and scale a single register with pymodbus 3.x."""
