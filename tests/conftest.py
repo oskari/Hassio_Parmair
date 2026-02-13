@@ -84,7 +84,7 @@ def mac120_v2_coordinator() -> MockCoordinator | None:
 def is_v2_device(coordinator: MockCoordinator) -> bool:
     """Check if the current fixture is a V2.x device."""
     sw_ver = coordinator.data.get("software_version", 0)
-    return sw_ver >= 2.0 if isinstance(sw_ver, (int, float)) else False
+    return sw_ver >= 2.0 if isinstance(sw_ver, int | float) else False
 
 
 # Collect all fixture files at module load time for test discovery

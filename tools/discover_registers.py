@@ -142,11 +142,11 @@ def read_register(client: ModbusTcpClient, address: int, slave_id: int) -> int |
                 result = client.read_holding_registers(address, 1, unit=slave_id)
             except TypeError:
                 return None
-    
+
     try:
-        if hasattr(result, 'isError') and result.isError():
+        if hasattr(result, "isError") and result.isError():
             return None
-        if hasattr(result, 'registers') and result.registers:
+        if hasattr(result, "registers") and result.registers:
             return result.registers[0]
         return None
     except Exception:
@@ -161,61 +161,61 @@ def main():
     parser.add_argument("--start", type=int, default=1000, help="Start address (default: 1000)")
     parser.add_argument("--end", type=int, default=1300, help="End address (default: 1300)")
     parser.add_argument("--output", type=str, help="Output JSON file")
-    
+
     args = parser.parse_args()
-    
+
     print(f"Connecting to {args.host}:{args.port}...")
     client = ModbusTcpClient(args.host, port=args.port)
-    
+
     if not client.connect():
         print("Failed to connect!")
         sys.exit(1)
-    
+
     print(f"Scanning registers {args.start} to {args.end}...")
     print()
-    
+
     documented = []
     undocumented = []
-    
+
     for addr in range(args.start, args.end + 1):
         value = read_register(client, addr, args.slave)
-        
+
         if value is not None:
             is_documented = addr in V2_DOCUMENTED
             label = V2_DOCUMENTED.get(addr, "???")
             status = "✓" if is_documented else "?"
-            
+
             entry = {
                 "address": addr,
                 "value": value,
                 "label": label,
                 "documented": is_documented,
             }
-            
+
             if is_documented:
                 documented.append(entry)
             else:
                 undocumented.append(entry)
-            
+
             # Print progress
             print(f"  {status} {addr:4d}: {value:6d}  {label}")
-    
+
     client.close()
-    
+
     print()
     print("=" * 60)
-    print(f"SUMMARY")
+    print("SUMMARY")
     print("=" * 60)
     print(f"Documented registers found: {len(documented)}")
     print(f"Undocumented registers found: {len(undocumented)}")
     print()
-    
+
     if undocumented:
         print("UNDOCUMENTED REGISTERS (need investigation):")
         print("-" * 60)
         for entry in undocumented:
             print(f"  Address {entry['address']:4d}: value={entry['value']:6d}")
-    
+
     # Save to file if requested
     if args.output:
         output_data = {
@@ -225,7 +225,7 @@ def main():
             "documented": documented,
             "undocumented": undocumented,
         }
-        
+
         output_path = Path(args.output)
         with open(output_path, "w") as f:
             json.dump(output_data, f, indent=2)
@@ -234,4 +234,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

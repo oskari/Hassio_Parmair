@@ -1,4 +1,5 @@
 """Number platform for Parmair MAC integration."""
+
 from __future__ import annotations
 
 import logging
@@ -55,10 +56,20 @@ async def async_setup_entry(
             coordinator, entry, REG_FILTER_INTERVAL, "Filter Change Interval"
         ),
         ParmairTimerNumber(
-            coordinator, entry, REG_BOOST_TIMER, "Boost Timer", "mdi:timer", "Set boost mode timer in minutes"
+            coordinator,
+            entry,
+            REG_BOOST_TIMER,
+            "Boost Timer",
+            "mdi:timer",
+            "Set boost mode timer in minutes",
         ),
         ParmairTimerNumber(
-            coordinator, entry, REG_OVERPRESSURE_TIMER, "Overpressure Timer", "mdi:timer", "Set overpressure mode timer in minutes"
+            coordinator,
+            entry,
+            REG_OVERPRESSURE_TIMER,
+            "Overpressure Timer",
+            "mdi:timer",
+            "Set overpressure mode timer in minutes",
         ),
     ]
 
@@ -144,7 +155,7 @@ class ParmairSpeedPresetNumber(ParmairNumberEntity):
     ) -> None:
         """Initialize speed preset number."""
         super().__init__(coordinator, entry, data_key, name)
-        
+
         # Adjust boost setting range (2-4 per documentation)
         if data_key == REG_BOOST_SETTING:
             self._attr_native_min_value = 2
@@ -167,7 +178,7 @@ class ParmairTemperatureSetpointNumber(ParmairNumberEntity):
     ) -> None:
         """Initialize temperature setpoint number."""
         super().__init__(coordinator, entry, data_key, name)
-        
+
         # Set appropriate ranges based on register
         if data_key == REG_EXHAUST_TEMP_SETPOINT:
             self._attr_native_min_value = 18.0

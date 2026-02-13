@@ -19,7 +19,7 @@ import argparse
 import json
 import sys
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -75,7 +75,7 @@ class DeviceDump:
         )
 
     @classmethod
-    def from_json(cls, json_str: str) -> "DeviceDump":
+    def from_json(cls, json_str: str) -> DeviceDump:
         """Create from JSON string."""
         data = json.loads(json_str)
         return cls(metadata=data["metadata"], registers=data["registers"])
@@ -106,7 +106,7 @@ def read_single_register(
 
     if hasattr(result, "registers"):
         raw = result.registers[0]
-    elif isinstance(result, (list, tuple)):
+    elif isinstance(result, list | tuple):
         raw = result[0]
     else:
         raw = result
@@ -120,10 +120,7 @@ def read_single_register(
         return raw, None
 
     # Apply scaling
-    if definition.scale == 1:
-        scaled = raw
-    else:
-        scaled = raw * definition.scale
+    scaled = raw if definition.scale == 1 else raw * definition.scale
 
     return raw, scaled
 
@@ -235,10 +232,7 @@ def dump_device(
             success_count += 1
             if verbose:
                 scaled_str = f"{scaled}" if scaled is not None else "N/A"
-                print(
-                    f"  [OK]   {key} (addr {definition.address}): "
-                    f"raw={raw}, scaled={scaled_str}"
-                )
+                print(f"  [OK]   {key} (addr {definition.address}): raw={raw}, scaled={scaled_str}")
             register_dumps[key] = {
                 "address": definition.address,
                 "label": definition.label,
@@ -346,7 +340,9 @@ Examples:
             print(f"Software Version: {dump.metadata['detected_software_version']}")
         if dump.metadata.get("detected_hardware_type"):
             print(f"Hardware Type: MAC {dump.metadata['detected_hardware_type']}")
-        print(f"Registers: {dump.metadata['registers_read']} read, {dump.metadata['registers_failed']} failed")
+        print(
+            f"Registers: {dump.metadata['registers_read']} read, {dump.metadata['registers_failed']} failed"
+        )
         print(f"Output: {output_path}")
 
     except ModbusException as e:
@@ -359,4 +355,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

@@ -27,15 +27,11 @@ _READ_CANDIDATES = ("device_id", "slave", "unit")
 _WRITE_CANDIDATES = ("device_id", "slave", "unit")
 
 
-def read_holding_registers(
-    client: Any, address: int, count: int, unit_id: int
-) -> Any:
+def read_holding_registers(client: Any, address: int, count: int, unit_id: int) -> Any:
     """Read holding registers with unit ID. Works with any pymodbus 3.x bundled by HA."""
     global _read_kwarg
     if _read_kwarg is not None:
-        return client.read_holding_registers(
-            address=address, count=count, **{_read_kwarg: unit_id}
-        )
+        return client.read_holding_registers(address=address, count=count, **{_read_kwarg: unit_id})
     with _lock:
         if _read_kwarg is not None:
             return client.read_holding_registers(
@@ -52,28 +48,20 @@ def read_holding_registers(
             except TypeError:
                 continue
         _read_kwarg = "device_id"
-        return client.read_holding_registers(
-            address=address, count=count, device_id=unit_id
-        )
+        return client.read_holding_registers(address=address, count=count, device_id=unit_id)
 
 
 def write_register(client: Any, address: int, value: int, unit_id: int) -> Any:
     """Write single register with unit ID. Works with any pymodbus 3.x bundled by HA."""
     global _write_kwarg
     if _write_kwarg is not None:
-        return client.write_register(
-            address, value, **{_write_kwarg: unit_id}
-        )
+        return client.write_register(address, value, **{_write_kwarg: unit_id})
     with _lock:
         if _write_kwarg is not None:
-            return client.write_register(
-                address, value, **{_write_kwarg: unit_id}
-            )
+            return client.write_register(address, value, **{_write_kwarg: unit_id})
         for kw in _WRITE_CANDIDATES:
             try:
-                result = client.write_register(
-                    address, value, **{kw: unit_id}
-                )
+                result = client.write_register(address, value, **{kw: unit_id})
                 _write_kwarg = kw
                 _LOGGER.debug("pymodbus write_register uses %s=", kw)
                 return result

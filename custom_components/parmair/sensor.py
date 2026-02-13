@@ -1,4 +1,5 @@
 """Sensor platform for Parmair integration."""
+
 from __future__ import annotations
 
 import logging
@@ -13,7 +14,6 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     UnitOfTemperature,
-    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
@@ -21,21 +21,20 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
-    DOMAIN,
-    DEFAULT_NAME,
     CONTROL_STATE_MAP_V1,
     CONTROL_STATE_MAP_V2,
+    DOMAIN,
     FILTER_STATE_MAP_V1,
     FILTER_STATE_MAP_V2,
+    HEATER_TYPE_ELECTRIC_V1,
+    HEATER_TYPE_ELECTRIC_V2,
+    HEATER_TYPE_NONE_V1,
+    HEATER_TYPE_NONE_V2,
+    HEATER_TYPE_WATER_V1,
+    HEATER_TYPE_WATER_V2,
     POWER_STATE_MAP_V1,
     POWER_STATE_MAP_V2,
     SOFTWARE_VERSION_2,
-    HEATER_TYPE_WATER_V1,
-    HEATER_TYPE_ELECTRIC_V1,
-    HEATER_TYPE_NONE_V1,
-    HEATER_TYPE_ELECTRIC_V2,
-    HEATER_TYPE_WATER_V2,
-    HEATER_TYPE_NONE_V2,
 )
 from .coordinator import ParmairCoordinator
 
@@ -47,7 +46,7 @@ def _filter_state_map(coordinator: ParmairCoordinator) -> dict[int, str]:
     Prefers device-reported software_version over config entry."""
     sw = coordinator.data.get("software_version")
     if sw is not None:
-        if sw >= 2.0 if isinstance(sw, (int, float)) else str(sw).startswith("2."):
+        if sw >= 2.0 if isinstance(sw, int | float) else str(sw).startswith("2."):
             return FILTER_STATE_MAP_V2
         return FILTER_STATE_MAP_V1
     # Fallback to config entry when device data not yet available
@@ -62,7 +61,7 @@ def _power_state_map(coordinator: ParmairCoordinator) -> dict[int, str]:
     V1: Off, Shutting Down, Starting, Running. V2: Off, On."""
     sw = coordinator.data.get("software_version")
     if sw is not None:
-        if sw >= 2.0 if isinstance(sw, (int, float)) else str(sw).startswith("2."):
+        if sw >= 2.0 if isinstance(sw, int | float) else str(sw).startswith("2."):
             return POWER_STATE_MAP_V2
         return POWER_STATE_MAP_V1
     cfg = coordinator.software_version
@@ -76,7 +75,7 @@ def _control_state_map(coordinator: ParmairCoordinator) -> dict[int, str]:
     V1: Stop, Away, Home, Boost, Overpressure, timers, Manual. V2: Off, Away, Home, Boost, Sauna, Fireplace."""
     sw = coordinator.data.get("software_version")
     if sw is not None:
-        if sw >= 2.0 if isinstance(sw, (int, float)) else str(sw).startswith("2."):
+        if sw >= 2.0 if isinstance(sw, int | float) else str(sw).startswith("2."):
             return CONTROL_STATE_MAP_V2
         return CONTROL_STATE_MAP_V1
     cfg = coordinator.software_version
@@ -92,37 +91,47 @@ async def async_setup_entry(
 ) -> None:
     """Set up Parmair sensor platform."""
     coordinator: ParmairCoordinator = hass.data[DOMAIN][entry.entry_id]
-    
+
     _LOGGER.debug(
         "Setting up Parmair sensors. Available data keys: %s",
         list(coordinator.data.keys()) if coordinator.data else "None",
     )
-    
+
     entities = [
         # System information
         ParmairSoftwareVersionSensor(coordinator, entry, "software_version", "Software Version"),
         ParmairHeaterTypeSensor(coordinator, entry, "heater_type", "Heater Type"),
-        
         # Temperature sensors
         ParmairTemperatureSensor(coordinator, entry, "fresh_air_temp", "Fresh Air Temperature"),
-        ParmairTemperatureSensor(coordinator, entry, "supply_after_recovery_temp", "Supply Air Temperature (After Recovery)"),
+        ParmairTemperatureSensor(
+            coordinator,
+            entry,
+            "supply_after_recovery_temp",
+            "Supply Air Temperature (After Recovery)",
+        ),
         ParmairTemperatureSensor(coordinator, entry, "supply_temp", "Supply Air Temperature"),
         ParmairTemperatureSensor(coordinator, entry, "exhaust_temp", "Exhaust Air Temperature"),
         ParmairTemperatureSensor(coordinator, entry, "waste_temp", "Waste Air Temperature"),
-        ParmairTemperatureSensor(coordinator, entry, "exhaust_temp_setpoint", "Exhaust Temperature Setpoint"),
-        ParmairTemperatureSensor(coordinator, entry, "supply_temp_setpoint", "Supply Temperature Setpoint"),
-        
+        ParmairTemperatureSensor(
+            coordinator, entry, "exhaust_temp_setpoint", "Exhaust Temperature Setpoint"
+        ),
+        ParmairTemperatureSensor(
+            coordinator, entry, "supply_temp_setpoint", "Supply Temperature Setpoint"
+        ),
         # Other sensors
         ParmairControlStateSensor(coordinator, entry, "control_state", "Control State"),
         ParmairSpeedControlSensor(coordinator, entry, "actual_speed", "Current Speed"),
         ParmairPowerStateSensor(coordinator, entry, "power", "Power State"),
-        ParmairBinarySensor(coordinator, entry, "home_state", "Home/Away State", {0: "Away", 1: "Home"}),
+        ParmairBinarySensor(
+            coordinator, entry, "home_state", "Home/Away State", {0: "Away", 1: "Home"}
+        ),
         ParmairBinarySensor(coordinator, entry, "boost_state", "Boost State", {0: "Off", 1: "On"}),
         ParmairAlarmSensor(coordinator, entry, "alarm_count", "Alarm Count"),
         ParmairAlarmSensor(coordinator, entry, "sum_alarm", "Summary Alarm"),
-        
         # State sensors
-        ParmairBinarySensor(coordinator, entry, "defrost_state", "Defrost State", {0: "Off", 1: "Active"}),
+        ParmairBinarySensor(
+            coordinator, entry, "defrost_state", "Defrost State", {0: "Off", 1: "Active"}
+        ),
         ParmairBinarySensor(
             coordinator,
             entry,
@@ -130,23 +139,24 @@ async def async_setup_entry(
             "Filter Status",
             _filter_state_map(coordinator),
         ),
-        
         # Performance sensors
-        ParmairPercentageSensor(coordinator, entry, "heat_recovery_efficiency", "Heat Recovery Efficiency"),
-        ParmairPercentageSensor(coordinator, entry, "lto_heat_recovery_control", "LTO Heat Recovery Control"),
+        ParmairPercentageSensor(
+            coordinator, entry, "heat_recovery_efficiency", "Heat Recovery Efficiency"
+        ),
+        ParmairPercentageSensor(
+            coordinator, entry, "lto_heat_recovery_control", "LTO Heat Recovery Control"
+        ),
         ParmairPercentageSensor(coordinator, entry, "supply_fan_speed", "Supply Fan Speed"),
         ParmairPercentageSensor(coordinator, entry, "exhaust_fan_speed", "Exhaust Fan Speed"),
         ParmairPercentageSensor(coordinator, entry, "pre_heater_output", "Pre-heater Output"),
         ParmairPercentageSensor(coordinator, entry, "post_heater_output", "Post-heater Output"),
-        
         # Optional sensors (will show unavailable if hardware not present)
         ParmairHumiditySensor(coordinator, entry, "humidity", "Humidity"),
         ParmairHumidity24hAvgSensor(coordinator, entry, "humidity_24h_avg", "Humidity 24h Average"),
-        
         # Filter change date sensor
         ParmairFilterChangeDateSensor(coordinator, entry),
     ]
-    
+
     # Add exhaust CO2 sensor only for MAC 2 devices (v2.xx firmware)
     # QE05_M = Combination sensor in exhaust duct (CO2 + humidity)
     # Only in newest MAC 2 devices
@@ -156,7 +166,7 @@ async def async_setup_entry(
     except (KeyError, ValueError):
         # Register doesn't exist in v1.xx firmware - skip this sensor
         pass
-    
+
     async_add_entities(entities)
 
 
@@ -432,13 +442,11 @@ class ParmairSpeedControlSensor(ParmairRegisterEntity, SensorEntity):
         if raw_value is None:
             return None
         return int(raw_value)
-    
+
     @property
     def extra_state_attributes(self) -> dict[str, str]:
         """Return additional attributes."""
-        return {
-            "description": "0=Stop, 1=Speed 1, 2=Speed 2, 3=Speed 3, 4=Speed 4, 5=Speed 5"
-        }
+        return {"description": "0=Stop, 1=Speed 1, 2=Speed 2, 3=Speed 3, 4=Speed 4, 5=Speed 5"}
 
 
 class ParmairPowerStateSensor(ParmairRegisterEntity, SensorEntity):
@@ -475,7 +483,7 @@ class ParmairPowerStateSensor(ParmairRegisterEntity, SensorEntity):
 
 class ParmairHeaterTypeSensor(ParmairRegisterEntity, SensorEntity):
     """Representation of heater type with mapped values.
-    
+
     NOTE: Heater type values are REVERSED between firmware versions!
     v1.xx: 0=Water, 1=Electric, 2=None
     v2.xx: 0=Electric, 1=Water, 2=None
@@ -490,14 +498,14 @@ class ParmairHeaterTypeSensor(ParmairRegisterEntity, SensorEntity):
     STATE_MAP_V1 = {
         HEATER_TYPE_WATER_V1: "Water",
         HEATER_TYPE_ELECTRIC_V1: "Electric",
-        HEATER_TYPE_NONE_V1: "None"
+        HEATER_TYPE_NONE_V1: "None",
     }
-    
+
     # v2.xx mapping (register 1127)
     STATE_MAP_V2 = {
         HEATER_TYPE_ELECTRIC_V2: "Electric",
         HEATER_TYPE_WATER_V2: "Water",
-        HEATER_TYPE_NONE_V2: "None"
+        HEATER_TYPE_NONE_V2: "None",
     }
 
     def __init__(
@@ -516,7 +524,7 @@ class ParmairHeaterTypeSensor(ParmairRegisterEntity, SensorEntity):
         raw_value = self.coordinator.data.get(self._data_key)
         if raw_value is None:
             return None
-        
+
         # Determine firmware version from software_version sensor
         software_version = self.coordinator.data.get("software_version")
         if software_version and software_version >= 2.0:
@@ -590,10 +598,10 @@ class ParmairFilterChangeDateSensor(CoordinatorEntity[ParmairCoordinator], Senso
         day = self.coordinator.data.get("filter_day")
         month = self.coordinator.data.get("filter_month")
         year = self.coordinator.data.get("filter_year")
-        
+
         if day is None or month is None or year is None:
             return None
-        
+
         # Validate date values
         try:
             if not (1 <= day <= 31 and 1 <= month <= 12 and 2000 <= year <= 3000):
@@ -608,14 +616,14 @@ class ParmairFilterChangeDateSensor(CoordinatorEntity[ParmairCoordinator], Senso
         next_day = self.coordinator.data.get("filter_next_day")
         next_month = self.coordinator.data.get("filter_next_month")
         next_year = self.coordinator.data.get("filter_next_year")
-        
+
         attrs = {}
-        
+
         if next_day is not None and next_month is not None and next_year is not None:
             try:
                 if 1 <= next_day <= 31 and 1 <= next_month <= 12 and 2000 <= next_year <= 3000:
                     attrs["next_change_date"] = f"{next_year:04d}-{next_month:02d}-{next_day:02d}"
             except (ValueError, TypeError):
                 pass
-        
+
         return attrs

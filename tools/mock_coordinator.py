@@ -6,20 +6,19 @@ offline testing of entity interpretation logic.
 
 Usage:
     from mock_coordinator import MockCoordinator
-    
+
     coord = MockCoordinator.from_file("dumps/my_device.json")
     print(coord.data)  # Access parsed register values
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-import sys
-import importlib.util
 
 # Add parent directory to path to import from custom_components
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -54,7 +53,7 @@ class MockDeviceInfo:
 
 class MockCoordinator:
     """Mock coordinator that loads data from a JSON dump file.
-    
+
     This provides the same interface as ParmairCoordinator but without
     any Home Assistant dependencies, making it suitable for offline testing.
     """
@@ -67,7 +66,7 @@ class MockCoordinator:
         software_version: str = SOFTWARE_VERSION_1,
     ) -> None:
         """Initialize the mock coordinator.
-        
+
         Args:
             data: The processed register data (key -> scaled value)
             metadata: Dump metadata (timestamp, host, etc.)
@@ -109,10 +108,9 @@ class MockCoordinator:
         model = "MAC"
         if hw_type is not None:
             hw_int = int(hw_type)
-            is_v2 = (
-                self._software_version == SOFTWARE_VERSION_2
-                or str(self._software_version).startswith("2.")
-            )
+            is_v2 = self._software_version == SOFTWARE_VERSION_2 or str(
+                self._software_version
+            ).startswith("2.")
             model_num = HARDWARE_TYPE_MAP_V2.get(hw_int, hw_int) if is_v2 else hw_int
             model = f"MAC {model_num}"
 
@@ -124,7 +122,7 @@ class MockCoordinator:
         }
 
         if sw_version is not None:
-            if isinstance(sw_version, (int, float)):
+            if isinstance(sw_version, int | float):
                 device_info["sw_version"] = f"{sw_version:.2f}"
             else:
                 device_info["sw_version"] = str(sw_version)
@@ -142,12 +140,12 @@ class MockCoordinator:
         return None
 
     @classmethod
-    def from_file(cls, filepath: str | Path) -> "MockCoordinator":
+    def from_file(cls, filepath: str | Path) -> MockCoordinator:
         """Create a MockCoordinator from a JSON dump file.
-        
+
         Args:
             filepath: Path to the JSON dump file
-            
+
         Returns:
             MockCoordinator instance with loaded data
         """
@@ -155,7 +153,7 @@ class MockCoordinator:
         if not filepath.exists():
             raise FileNotFoundError(f"Dump file not found: {filepath}")
 
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             dump = json.load(f)
 
         metadata = dump.get("metadata", {})
@@ -163,14 +161,11 @@ class MockCoordinator:
 
         # Determine software version from metadata or detect from version register
         software_version = metadata.get("register_map_version", SOFTWARE_VERSION_1)
-        
+
         # Override if we have detected version that suggests different map
         detected_ver = metadata.get("detected_software_version")
         if detected_ver is not None:
-            if detected_ver >= 2.0:
-                software_version = SOFTWARE_VERSION_2
-            else:
-                software_version = SOFTWARE_VERSION_1
+            software_version = SOFTWARE_VERSION_2 if detected_ver >= 2.0 else SOFTWARE_VERSION_1
 
         # Build data dict from scaled values
         data: dict[str, Any] = {}
@@ -183,10 +178,7 @@ class MockCoordinator:
 
         # v2.x: derive home_state, boost_state, overpressure_state from control_state
         # (USERSTATECONTROL_FO: 0=Off, 1=Away, 2=Home, 3=Boost, 4=Sauna, 5=Fireplace)
-        is_v2 = (
-            software_version == SOFTWARE_VERSION_2
-            or str(software_version).startswith("2.")
-        )
+        is_v2 = software_version == SOFTWARE_VERSION_2 or str(software_version).startswith("2.")
         if is_v2:
             user_state = data.get("control_state")
             if user_state is not None:
@@ -206,22 +198,22 @@ class MockCoordinator:
         cls,
         data: dict[str, Any],
         software_version: str = SOFTWARE_VERSION_1,
-    ) -> "MockCoordinator":
+    ) -> MockCoordinator:
         """Create a MockCoordinator from a data dictionary.
-        
+
         This is useful for creating test fixtures with specific values.
-        
+
         Args:
             data: Dictionary of register key -> scaled value
             software_version: Software version for register map
-            
+
         Returns:
             MockCoordinator instance
         """
         # Build register dict from data
         registers_map = get_registers_for_version(software_version)
         registers: dict[str, dict[str, Any]] = {}
-        
+
         for key, value in data.items():
             if key in registers_map:
                 reg_def = registers_map[key]
@@ -230,7 +222,7 @@ class MockCoordinator:
                     raw = int(value) if value is not None else None
                 else:
                     raw = int(round(value / reg_def.scale)) if value is not None else None
-                    
+
                 registers[key] = {
                     "address": reg_def.address,
                     "label": reg_def.label,
@@ -247,10 +239,7 @@ class MockCoordinator:
         }
 
         # v2.x: derive home_state, boost_state, overpressure_state from control_state
-        is_v2 = (
-            software_version == SOFTWARE_VERSION_2
-            or str(software_version).startswith("2.")
-        )
+        is_v2 = software_version == SOFTWARE_VERSION_2 or str(software_version).startswith("2.")
         if is_v2:
             data = dict(data)  # Copy to avoid mutating user input
             user_state = data.get("control_state")
@@ -275,12 +264,11 @@ class MockCoordinator:
 # Convenience function for quick loading
 def load_dump(filepath: str | Path) -> MockCoordinator:
     """Load a dump file and return a MockCoordinator.
-    
+
     Args:
         filepath: Path to the JSON dump file
-        
+
     Returns:
         MockCoordinator instance
     """
     return MockCoordinator.from_file(filepath)
-

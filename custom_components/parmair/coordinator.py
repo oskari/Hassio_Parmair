@@ -1,6 +1,8 @@
 """DataUpdateCoordinator for Parmair integration."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
 import random
 import threading
@@ -8,13 +10,12 @@ import time
 from datetime import timedelta
 from typing import Any
 
-from pymodbus.client import ModbusTcpClient
-from pymodbus.exceptions import ModbusException
-
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.config_entries import ConfigEntry
+from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ModbusException
 
 from . import pymodbus_compat
 from .const import (
@@ -30,10 +31,8 @@ from .const import (
     HARDWARE_TYPE_MAP_V2,
     HEATER_TYPE_UNKNOWN,
     POLLING_REGISTER_KEYS,
-    REGISTERS,
     SOFTWARE_VERSION_1,
     SOFTWARE_VERSION_2,
-    SOFTWARE_VERSION_UNKNOWN,
     STATIC_REGISTER_KEYS,
     RegisterDefinition,
     get_register_definition,
@@ -46,12 +45,12 @@ _LOGGER = logging.getLogger(__name__)
 def _set_unit_id(client: ModbusTcpClient, unit_id: int) -> None:
     """Set unit ID on the Modbus client for pymodbus 3.x."""
     # Pymodbus 3.x uses 'slave' attribute
-    if hasattr(client, 'slave'):
+    if hasattr(client, "slave"):
         client.slave = unit_id
     # Fallback to other common attributes
-    elif hasattr(client, 'unit_id'):
+    elif hasattr(client, "unit_id"):
         client.unit_id = unit_id
-    elif hasattr(client, 'slave_id'):
+    elif hasattr(client, "slave_id"):
         client.slave_id = unit_id
 
 
@@ -74,7 +73,7 @@ def _build_read_ranges(
     ranges: list[tuple[int, int]] = []
     start = addresses[0]
     count = 1
-    for prev, curr in zip(addresses[:-1], addresses[1:]):
+    for prev, curr in zip(addresses[:-1], addresses[1:], strict=True):
         if curr == prev + 1 and count < max_registers:
             count += 1
         else:
@@ -105,32 +104,28 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.slave_id = raw_slave_id
         self.software_version = entry.data.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
         self.heater_type = entry.data.get(CONF_HEATER_TYPE, HEATER_TYPE_UNKNOWN)
-        
+
         scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-        
+
         # Get version-specific register map
         self._registers = get_registers_for_version(self.software_version)
-        
+
         # Separate static and dynamic register lists
         self._static_registers: list[RegisterDefinition] = [
-            self._registers[key]
-            for key in STATIC_REGISTER_KEYS
-            if key in self._registers
+            self._registers[key] for key in STATIC_REGISTER_KEYS if key in self._registers
         ]
-        
+
         self._poll_registers: list[RegisterDefinition] = [
-            self._registers[key]
-            for key in POLLING_REGISTER_KEYS
-            if key in self._registers
+            self._registers[key] for key in POLLING_REGISTER_KEYS if key in self._registers
         ]
-        
+
         # Storage for static data (read once)
         self._static_data: dict[str, Any] = {}
         self._static_data_read = False
 
         self._client = ModbusTcpClient(host=self.host, port=self.port)
         self._lock = threading.Lock()
-        
+
         super().__init__(
             hass,
             _LOGGER,
@@ -160,17 +155,13 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # Jitter to desynchronize from other Modbus clients polling the same device
                 time.sleep(random.uniform(0.2, 0.7))
             except Exception:
-                try:
+                with contextlib.suppress(Exception):
                     read_client.close()
-                except Exception:
-                    pass
                 raise
 
             # Wake-up read: power register (1001) to keep device responsive
-            try:
+            with contextlib.suppress(Exception):
                 _ = read_client.read_holding_registers(address=1001, count=1)
-            except Exception:
-                pass
             time.sleep(0.3)
 
             # Read static registers once on first poll (batched)
@@ -192,8 +183,14 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                                 for definition in static_addr_to_defs[addr]:
                                     if definition.optional and raw < 0:
                                         continue
-                                    self._static_data[definition.key] = self._from_raw(definition, raw)
-                                    _LOGGER.debug("Static register %s: %s", definition.label, self._static_data[definition.key])
+                                    self._static_data[definition.key] = self._from_raw(
+                                        definition, raw
+                                    )
+                                    _LOGGER.debug(
+                                        "Static register %s: %s",
+                                        definition.label,
+                                        self._static_data[definition.key],
+                                    )
                     time.sleep(0.3)
                 self._static_data_read = True
 
@@ -232,31 +229,32 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         for definition in definitions:
                             data[definition.key] = value
                     time.sleep(0.3)
-                
+
                 if failed_registers:
                     _LOGGER.debug(
                         "Failed to read %d registers: %s",
                         len(failed_registers),
                         ", ".join(failed_registers),
                     )
-                
+
                 # Merge static data with dynamic data
                 data.update(self._static_data)
 
                 # v2.x: home_state, boost_state, overpressure_state share register 1181 (USERSTATECONTROL_FO)
                 # 0=Off, 1=Away, 2=Home, 3=Boost, 4=Sauna, 5=Fireplace
                 # Derive binary values for sensors that expect 0/1
-                is_v2 = (
-                    self.software_version == SOFTWARE_VERSION_2
-                    or str(self.software_version).startswith("2.")
-                )
+                is_v2 = self.software_version == SOFTWARE_VERSION_2 or str(
+                    self.software_version
+                ).startswith("2.")
                 if is_v2:
                     user_state = data.get("control_state")
                     if user_state is not None:
                         data["home_state"] = 1 if user_state == 2 else 0  # 2=Home
                         data["boost_state"] = 1 if user_state == 3 else 0  # 3=Boost
-                        data["overpressure_state"] = 1 if user_state in (4, 5) else 0  # 4=Sauna, 5=Fireplace
-                
+                        data["overpressure_state"] = (
+                            1 if user_state in (4, 5) else 0
+                        )  # 4=Sauna, 5=Fireplace
+
                 _LOGGER.debug(
                     "Read data from Parmair %s: %d values (%d static, %d dynamic)",
                     self.host,
@@ -265,43 +263,43 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     len(data) - len(self._static_data),
                 )
                 return data
-                
+
             except Exception as ex:
                 _LOGGER.error("Error reading from Modbus: %s", ex)
                 raise ModbusException(f"Failed to read data: {ex}") from ex
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     read_client.close()
-                except Exception:
-                    pass
 
     def write_register(self, key: str, value: float | int) -> bool:
         """Write a value to a Modbus register respecting scaling with pymodbus 3.x."""
         definition = get_register_definition(key, self._registers)
         try:
             with self._lock:
-                if not self._client.connected:
-                    if not self._client.connect():
-                        return False
-                
+                if not self._client.connected and not self._client.connect():
+                    return False
+
                 # Set unit ID on client
                 _set_unit_id(self._client, self.slave_id)
 
                 raw_value = self._to_raw(definition, value)
-                
+
                 result = pymodbus_compat.write_register(
                     self._client, definition.address, raw_value, self.slave_id
                 )
-                
+
                 _LOGGER.debug(
                     "Wrote %s to register %s (%d): raw=%d",
-                    value, definition.label, definition.address, raw_value
+                    value,
+                    definition.label,
+                    definition.address,
+                    raw_value,
                 )
-                
+
                 # Small delay after write to allow device to process
                 time.sleep(0.3)
-                
-                return not result.isError() if hasattr(result, 'isError') else result is not None
+
+                return not result.isError() if hasattr(result, "isError") else result is not None
         except Exception as ex:
             _LOGGER.error(
                 "Error writing to Modbus register %s (%s): %s",
@@ -318,11 +316,12 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_shutdown(self) -> None:
         """Close the Modbus connection."""
+
         def _close():
             with self._lock:
                 if self._client.connected:
                     self._client.close()
-        
+
         await self.hass.async_add_executor_job(_close)
 
     @property
@@ -330,32 +329,31 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Return device information."""
         sw_version = self.data.get("software_version")
         hw_type = self.data.get("hardware_type")
-        
+
         # Determine MAC model from hardware type
         model = "MAC"
         if hw_type is not None:
             hw_int = int(hw_type)
-            is_v2 = (
-                self.software_version == SOFTWARE_VERSION_2
-                or str(self.software_version).startswith("2.")
-            )
+            is_v2 = self.software_version == SOFTWARE_VERSION_2 or str(
+                self.software_version
+            ).startswith("2.")
             model_num = HARDWARE_TYPE_MAP_V2.get(hw_int, hw_int) if is_v2 else hw_int
             model = f"MAC {model_num}"
-        
+
         device_info = {
             "identifiers": {(DOMAIN, self.entry.entry_id)},
             "name": self.entry.data.get("name", DEFAULT_NAME),
             "manufacturer": "Parmair",
             "model": model,
         }
-        
+
         # Add software version
         if sw_version is not None:
-            if isinstance(sw_version, (int, float)):
+            if isinstance(sw_version, int | float):
                 device_info["sw_version"] = f"{sw_version:.2f}"
             else:
                 device_info["sw_version"] = str(sw_version)
-        
+
         return device_info
 
     def get_register_definition(self, key: str) -> RegisterDefinition:
@@ -368,14 +366,12 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Read a block of consecutive registers. Returns raw values or None on failure."""
         c = client if client is not None else self._client
         try:
-            result = pymodbus_compat.read_holding_registers(
-                c, address, count, self.slave_id
-            )
+            result = pymodbus_compat.read_holding_registers(c, address, count, self.slave_id)
             if not result or (hasattr(result, "isError") and result.isError()):
                 return None
             if hasattr(result, "registers"):
                 raw_list = list(result.registers)
-            elif isinstance(result, (list, tuple)):
+            elif isinstance(result, list | tuple):
                 raw_list = list(result)
             else:
                 return None
@@ -391,7 +387,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception as ex:
             _LOGGER.warning(
                 "Exception reading block at address %d count %d: %s",
-                address, count, ex,
+                address,
+                count,
+                ex,
             )
             return None
 
@@ -412,7 +410,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             if hasattr(result, "registers"):
                 raw = result.registers[0]
-            elif isinstance(result, (list, tuple)):
+            elif isinstance(result, list | tuple):
                 raw = result[0]
             else:
                 raw = result

@@ -22,7 +22,7 @@ import argparse
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -126,6 +126,7 @@ SUMMER_MODE_MAP_V2 = {0: "Winter", 1: "Transition", 2: "Summer"}
 # Interpretation Functions
 # ============================================================================
 
+
 def interpret_power_state(value: int | None, is_v2: bool = False) -> str:
     """Interpret power state register value."""
     if value is None:
@@ -195,6 +196,7 @@ def format_filter_date(day: int | None, month: int | None, year: int | None) -> 
 # Test Result Types
 # ============================================================================
 
+
 @dataclass
 class TestResult:
     """Result of a single interpretation test."""
@@ -215,10 +217,10 @@ class InterpretationTester:
         self.coord = coordinator
         self.verbose = verbose
         self.results: list[TestResult] = []
-        
+
         # Detect if this is a V2.x device
         sw_ver = coordinator.data.get("software_version", 0)
-        self.is_v2 = sw_ver >= 2.0 if isinstance(sw_ver, (int, float)) else False
+        self.is_v2 = sw_ver >= 2.0 if isinstance(sw_ver, int | float) else False
 
     def test_all(self) -> list[TestResult]:
         """Run all interpretation tests."""
@@ -262,13 +264,9 @@ class InterpretationTester:
         sw_ver = self.coord.data.get("software_version")
         raw = self.coord.get_raw_value("software_version")
         if sw_ver is not None:
-            self._add_result(
-                "System", "Software Version", raw, f"{sw_ver:.2f}"
-            )
+            self._add_result("System", "Software Version", raw, f"{sw_ver:.2f}")
         else:
-            self._add_result(
-                "System", "Software Version", raw, "N/A", "warning"
-            )
+            self._add_result("System", "Software Version", raw, "N/A", "warning")
 
         # Hardware type
         hw_type = self.coord.data.get("hardware_type")
@@ -283,17 +281,11 @@ class InterpretationTester:
                         "System", "Hardware Type", raw, f"MAC {model_num} (type code {hw_type_int})"
                     )
                 else:
-                    self._add_result(
-                        "System", "Hardware Type", raw, f"MAC {hw_type_int}"
-                    )
+                    self._add_result("System", "Hardware Type", raw, f"MAC {hw_type_int}")
             else:
-                self._add_result(
-                    "System", "Hardware Type", raw, f"MAC {hw_type_int}"
-                )
+                self._add_result("System", "Hardware Type", raw, f"MAC {hw_type_int}")
         else:
-            self._add_result(
-                "System", "Hardware Type", raw, "N/A", "warning"
-            )
+            self._add_result("System", "Hardware Type", raw, "N/A", "warning")
 
         # Heater type
         heater = self.coord.data.get("heater_type")
@@ -324,10 +316,9 @@ class InterpretationTester:
             # Check for reasonable temperature range
             status = "ok"
             note = ""
-            if value is not None:
-                if value < -50 or value > 80:
-                    status = "warning"
-                    note = "Unusual temperature"
+            if value is not None and (value < -50 or value > 80):
+                status = "warning"
+                note = "Unusual temperature"
 
             self._add_result(
                 "Temperature",
@@ -372,9 +363,7 @@ class InterpretationTester:
                 "State",
                 "Home/Away",
                 raw,
-                interpret_binary_state(
-                    int(home) if home is not None else None, HOME_STATE_MAP
-                ),
+                interpret_binary_state(int(home) if home is not None else None, HOME_STATE_MAP),
             )
 
         # Boost state - V2 derives from control_state
@@ -388,9 +377,7 @@ class InterpretationTester:
                 "State",
                 "Boost",
                 raw,
-                interpret_binary_state(
-                    int(boost) if boost is not None else None, BINARY_STATE_MAP
-                ),
+                interpret_binary_state(int(boost) if boost is not None else None, BINARY_STATE_MAP),
             )
 
         # Overpressure/Sauna/Fireplace state - V2 has different modes
@@ -409,9 +396,7 @@ class InterpretationTester:
                 "State",
                 "Overpressure",
                 raw,
-                interpret_binary_state(
-                    int(overp) if overp is not None else None, BINARY_STATE_MAP
-                ),
+                interpret_binary_state(int(overp) if overp is not None else None, BINARY_STATE_MAP),
             )
 
         # Defrost state
@@ -421,9 +406,7 @@ class InterpretationTester:
             "State",
             "Defrost",
             raw,
-            interpret_binary_state(
-                int(defrost) if defrost is not None else None, BINARY_STATE_MAP
-            ),
+            interpret_binary_state(int(defrost) if defrost is not None else None, BINARY_STATE_MAP),
         )
 
     def _test_speeds(self):
@@ -490,9 +473,7 @@ class InterpretationTester:
         if is_optional_sensor_installed(raw):
             self._add_result("Optional", "Humidity", raw, f"{humidity}%")
         else:
-            self._add_result(
-                "Optional", "Humidity", raw, "Not installed", "ok", "Sensor absent"
-            )
+            self._add_result("Optional", "Humidity", raw, "Not installed", "ok", "Sensor absent")
 
         # Humidity 24h average
         humidity_avg = self.coord.data.get("humidity_24h_avg")
@@ -500,9 +481,7 @@ class InterpretationTester:
         if humidity_avg is not None and humidity_avg >= 0:
             self._add_result("Optional", "Humidity 24h Avg", raw, f"{humidity_avg:.1f}%")
         else:
-            self._add_result(
-                "Optional", "Humidity 24h Avg", raw, "Not available", "ok"
-            )
+            self._add_result("Optional", "Humidity 24h Avg", raw, "Not available", "ok")
 
         # CO2
         co2 = self.coord.data.get("co2")
@@ -510,9 +489,7 @@ class InterpretationTester:
         if is_optional_sensor_installed(raw):
             self._add_result("Optional", "CO2", raw, f"{co2} ppm")
         else:
-            self._add_result(
-                "Optional", "CO2", raw, "Not installed", "ok", "Sensor absent"
-            )
+            self._add_result("Optional", "CO2", raw, "Not installed", "ok", "Sensor absent")
 
     def _test_filter_info(self):
         """Test filter information."""
@@ -576,20 +553,26 @@ class InterpretationTester:
                 self._add_result("State", "Season", raw, season_val)
             else:
                 self._add_result("State", "Season", raw, "N/A (register not read)")
-            
+
             # Summer cooling setting (0=Off, 1=On, 2=Auto?)
             summer = self.coord.data.get("summer_mode")
             raw = self.coord.get_raw_value("summer_mode")
             summer_cooling_map = {0: "Off", 1: "On", 2: "Auto"}
-            summer_val = summer_cooling_map.get(int(summer) if summer is not None else None, f"Unknown ({summer})")
+            summer_val = summer_cooling_map.get(
+                int(summer) if summer is not None else None, f"Unknown ({summer})"
+            )
             self._add_result("Switch", "Summer Cooling", raw, summer_val)
         else:
             # V1: summer_mode is just on/off
             summer = self.coord.data.get("summer_mode")
             raw = self.coord.get_raw_value("summer_mode")
             self._add_result(
-                "Switch", "Summer Mode", raw,
-                interpret_binary_state(int(summer) if summer is not None else None, BINARY_STATE_MAP),
+                "Switch",
+                "Summer Mode",
+                raw,
+                interpret_binary_state(
+                    int(summer) if summer is not None else None, BINARY_STATE_MAP
+                ),
             )
 
         # Other switches
@@ -605,9 +588,7 @@ class InterpretationTester:
                 "Switch",
                 name,
                 raw,
-                interpret_binary_state(
-                    int(value) if value is not None else None, BINARY_STATE_MAP
-                ),
+                interpret_binary_state(int(value) if value is not None else None, BINARY_STATE_MAP),
             )
 
     def _test_timers(self):
@@ -720,7 +701,7 @@ def test_file(filepath: Path, verbose: bool = False) -> bool:
     if coord.metadata.get("detected_software_version"):
         print(f"Software: {coord.metadata['detected_software_version']}")
     if coord.metadata.get("detected_hardware_type"):
-        hw_type = coord.metadata['detected_hardware_type']
+        hw_type = coord.metadata["detected_hardware_type"]
         # For V2, use mapping if available, otherwise use raw value
         if coord.software_version == SOFTWARE_VERSION_2:
             model_num = HARDWARE_TYPE_MAP_V2.get(hw_type, hw_type)
@@ -822,4 +803,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

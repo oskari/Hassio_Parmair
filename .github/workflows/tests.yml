@@ -51,11 +51,7 @@ jobs:
                   pip install -r requirements-test.txt
 
             - name: Run Ruff linter
-              run: |
-                  ruff check custom_components/ tools/ tests/
-              continue-on-error: true
+              run: ruff check custom_components/ tools/ tests/
 
             - name: Run Ruff formatter check
-              run: |
-                  ruff format --check custom_components/ tools/ tests/
-              continue-on-error: true
+              run: ruff format --check custom_components/ tools/ tests/
