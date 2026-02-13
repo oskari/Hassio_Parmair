@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import threading
 import time
 from datetime import timedelta
@@ -15,13 +16,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.config_entries import ConfigEntry
 
+from . import pymodbus_compat
 from .const import (
     CONF_HEATER_TYPE,
     CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
     CONF_SOFTWARE_VERSION,
     DEFAULT_NAME,
+    DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SLAVE_ID,
     DOMAIN,
     HARDWARE_TYPE_MAP_V2,
     HEATER_TYPE_UNKNOWN,
@@ -88,8 +92,17 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Initialize the coordinator."""
         self.entry = entry
         self.host = entry.data[CONF_HOST]
-        self.port = entry.data[CONF_PORT]
-        self.slave_id = entry.data[CONF_SLAVE_ID]
+        self.port = entry.data.get(CONF_PORT, DEFAULT_PORT)
+        # Parmair devices use unit 0; default to 0 and treat legacy slave_id=1 as 0
+        raw_slave_id = entry.data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
+        if raw_slave_id == 1:
+            _LOGGER.warning(
+                "Config has slave_id=1 but Parmair uses unit 0; using 0. "
+                "Delete and re-add the integration to clear this warning."
+            )
+            self.slave_id = 0
+        else:
+            self.slave_id = raw_slave_id
         self.software_version = entry.data.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
         self.heater_type = entry.data.get(CONF_HEATER_TYPE, HEATER_TYPE_UNKNOWN)
         
@@ -135,25 +148,27 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _read_modbus_data(self) -> dict[str, Any]:
         """Read data from Modbus (runs in executor)."""
         with self._lock:
-            # Close and reconnect to flush any stale responses in buffer
-            if self._client.connected:
+            # Use a fresh client per poll to avoid transaction_id mismatch from stale
+            # responses or from another Modbus client (pymodbus: "transaction_id=X but got id=Y").
+            read_client = ModbusTcpClient(host=self.host, port=self.port)
+            try:
+                if not read_client.connect():
+                    raise ModbusException("Failed to connect to Modbus device")
+                _set_unit_id(read_client, self.slave_id)
+                # Delay after connect to let device and buffers settle
+                time.sleep(0.5)
+                # Jitter to desynchronize from other Modbus clients polling the same device
+                time.sleep(random.uniform(0.2, 0.7))
+            except Exception:
                 try:
-                    self._client.close()
+                    read_client.close()
                 except Exception:
-                    pass  # Ignore close errors
-            
-            if not self._client.connect():
-                raise ModbusException("Failed to connect to Modbus device")
-            
-            # Set slave/unit ID on the client
-            _set_unit_id(self._client, self.slave_id)
-            
-            # Longer delay after connect to allow device to stabilize and clear buffers
-            time.sleep(0.3)
-            
+                    pass
+                raise
+
             # Wake-up read: power register (1001) to keep device responsive
             try:
-                _ = self._client.read_holding_registers(address=1001, count=1)
+                _ = read_client.read_holding_registers(address=1001, count=1)
             except Exception:
                 pass
             time.sleep(0.3)
@@ -165,10 +180,11 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 for definition in self._static_registers:
                     static_addr_to_defs.setdefault(definition.address, []).append(definition)
                 for start_addr, span_count in _build_read_ranges(static_addr_to_defs):
-                    block = self._read_register_block(start_addr, span_count)
-                    if block is None:
-                        time.sleep(0.5)
-                        block = self._read_register_block(start_addr, span_count)
+                    block = self._read_register_block(start_addr, span_count, read_client)
+                    for _ in range(3):
+                        if block is None:
+                            time.sleep(0.5)
+                            block = self._read_register_block(start_addr, span_count, read_client)
                     if block is not None:
                         for i, raw in enumerate(block):
                             addr = start_addr + i
@@ -192,10 +208,11 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 # Read in batched ranges, one Modbus request per consecutive span
                 for start_addr, span_count in _build_read_ranges(address_to_definitions):
-                    block = self._read_register_block(start_addr, span_count)
-                    if block is None:
-                        time.sleep(0.5)
-                        block = self._read_register_block(start_addr, span_count)
+                    block = self._read_register_block(start_addr, span_count, read_client)
+                    for _ in range(3):
+                        if block is None:
+                            time.sleep(0.5)
+                            block = self._read_register_block(start_addr, span_count, read_client)
                     if block is None:
                         for addr in range(start_addr, start_addr + span_count):
                             if addr in address_to_definitions:
@@ -253,9 +270,8 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 _LOGGER.error("Error reading from Modbus: %s", ex)
                 raise ModbusException(f"Failed to read data: {ex}") from ex
             finally:
-                # Always close after reading to prevent buffer buildup
                 try:
-                    self._client.close()
+                    read_client.close()
                 except Exception:
                     pass
 
@@ -273,8 +289,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 raw_value = self._to_raw(definition, value)
                 
-                # Write using pymodbus 3.x API
-                result = self._client.write_register(definition.address, raw_value)
+                result = pymodbus_compat.write_register(
+                    self._client, definition.address, raw_value, self.slave_id
+                )
                 
                 _LOGGER.debug(
                     "Wrote %s to register %s (%d): raw=%d",
@@ -345,11 +362,14 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Expose register metadata for other components."""
         return get_register_definition(key, self._registers)
 
-    def _read_register_block(self, address: int, count: int) -> list[int] | None:
+    def _read_register_block(
+        self, address: int, count: int, client: ModbusTcpClient | None = None
+    ) -> list[int] | None:
         """Read a block of consecutive registers. Returns raw values or None on failure."""
+        c = client if client is not None else self._client
         try:
-            result = self._client.read_holding_registers(
-                address=address, count=count
+            result = pymodbus_compat.read_holding_registers(
+                c, address, count, self.slave_id
             )
             if not result or (hasattr(result, "isError") and result.isError()):
                 return None
@@ -378,11 +398,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
         """Read and scale a single register with pymodbus 3.x."""
         try:
-            # Read using pymodbus 3.x API (unit ID already set on client)
-            result = self._client.read_holding_registers(
-                address=definition.address, count=1
+            result = pymodbus_compat.read_holding_registers(
+                self._client, definition.address, 1, self.slave_id
             )
-            
             if not result or (hasattr(result, "isError") and result.isError()):
                 _LOGGER.warning(
                     "Failed reading register %s (%s) at address %d",

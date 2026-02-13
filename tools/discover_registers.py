@@ -131,17 +131,14 @@ V2_DOCUMENTED = {
 
 
 def read_register(client: ModbusTcpClient, address: int, slave_id: int) -> int | None:
-    """Try to read a single register."""
+    """Try to read a single register. pymodbus 3.10+ uses device_id=; older uses slave=."""
     try:
-        # pymodbus 3.11+ API
-        result = client.read_holding_registers(address, count=1, slave=slave_id)
+        result = client.read_holding_registers(address, count=1, device_id=slave_id)
     except TypeError:
         try:
-            # Try device_id instead of slave
-            result = client.read_holding_registers(address, count=1, device_id=slave_id)
+            result = client.read_holding_registers(address, count=1, slave=slave_id)
         except TypeError:
             try:
-                # Older API with positional args
                 result = client.read_holding_registers(address, 1, unit=slave_id)
             except TypeError:
                 return None

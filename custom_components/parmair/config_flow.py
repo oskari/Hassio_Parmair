@@ -17,18 +17,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_integration
 
 
-def _set_unit_id(client: ModbusTcpClient, unit_id: int) -> None:
-    """Set unit ID on the Modbus client for pymodbus 3.x."""
-    # Pymodbus 3.x uses 'slave' attribute
-    if hasattr(client, 'slave'):
-        client.slave = unit_id
-    # Fallback to other common attributes
-    elif hasattr(client, 'unit_id'):
-        client.unit_id = unit_id
-    elif hasattr(client, 'slave_id'):
-        client.slave_id = unit_id
-
-
+from . import pymodbus_compat
 from .const import (
     CONF_HEATER_TYPE,
     CONF_SCAN_INTERVAL,
@@ -120,15 +109,14 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             },
         ]
         
+        unit_id = data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
+        
         def _read_register(address: int) -> int | None:
-            """Read a single register with pymodbus 3.x."""
+            """Read a single register (works with any pymodbus 3.x: device_id= or slave=)."""
             try:
-                # Set the unit ID on the client
-                _set_unit_id(client, data[CONF_SLAVE_ID])
-                
-                # Read using pymodbus 3.x API
-                result = client.read_holding_registers(address, count=1)
-                
+                result = pymodbus_compat.read_holding_registers(
+                    client, address, 1, unit_id
+                )
                 # Check if read was successful
                 if result and not (hasattr(result, "isError") and result.isError()):
                     # Extract register value
@@ -308,14 +296,12 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     
     # Try to read a register to verify communication
     def _read_test():
-        """Test reading from the device with pymodbus 3.x."""
+        """Test reading from the device (works with any pymodbus 3.x)."""
         try:
-            # Set unit ID on client
-            _set_unit_id(client, data[CONF_SLAVE_ID])
-            
-            # Read using pymodbus 3.x API
-            result = client.read_holding_registers(power_register.address, count=1)
-            
+            unit_id = data.get(CONF_SLAVE_ID, DEFAULT_SLAVE_ID)
+            result = pymodbus_compat.read_holding_registers(
+                client, power_register.address, 1, unit_id
+            )
             return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
             _LOGGER.debug("Test read failed: %s", ex)

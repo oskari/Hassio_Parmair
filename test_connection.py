@@ -8,7 +8,7 @@ Usage:
     
 Example:
     python test_connection.py 192.168.1.100
-    python test_connection.py 192.168.1.100 502 1
+    python test_connection.py 192.168.1.100 502 0
 """
 
 import sys
@@ -20,7 +20,16 @@ REGISTER_CONTROL_STATE = 184  # Register 185
 REGISTER_EXHAUST_TEMP = 23  # Register 24
 REGISTER_SUPPLY_TEMP = 22  # Register 23
 
-def test_connection(host, port=502, slave_id=1):
+
+def _read_register(client, address, slave_id):
+    """Read one register; pymodbus 3.10+ uses device_id=, older uses slave=."""
+    try:
+        return client.read_holding_registers(address, 1, device_id=slave_id)
+    except TypeError:
+        return client.read_holding_registers(address, 1, slave=slave_id)
+
+
+def test_connection(host, port=502, slave_id=0):
     """Test connection to Parmair device."""
     print(f"Connecting to Parmair device at {host}:{port} (slave ID: {slave_id})")
     
@@ -37,7 +46,7 @@ def test_connection(host, port=502, slave_id=1):
         
         # Test reading power status
         print("\nReading registers...")
-        result = client.read_holding_registers(REGISTER_POWER, 1, slave=slave_id)
+        result = _read_register(client, REGISTER_POWER, slave_id)
         
         if result.isError():
             print(f"❌ Error reading register {REGISTER_POWER}: {result}")
@@ -49,7 +58,7 @@ def test_connection(host, port=502, slave_id=1):
         print(f"✅ Power State (Reg 208): {power_state} ({power_states.get(power_state, 'Unknown')})")
         
         # Read control state
-        result = client.read_holding_registers(REGISTER_CONTROL_STATE, 1, slave=slave_id)
+        result = _read_register(client, REGISTER_CONTROL_STATE, slave_id)
         if not result.isError():
             control_state = result.registers[0]
             control_states = {
@@ -59,13 +68,13 @@ def test_connection(host, port=502, slave_id=1):
             print(f"✅ Control State (Reg 185): {control_state} ({control_states.get(control_state, f'Mode {control_state}')})")
         
         # Read exhaust temperature
-        result = client.read_holding_registers(REGISTER_EXHAUST_TEMP, 1, slave=slave_id)
+        result = _read_register(client, REGISTER_EXHAUST_TEMP, slave_id)
         if not result.isError():
             temp = result.registers[0] / 10.0
             print(f"✅ Exhaust Temperature (Reg 24): {temp}°C")
         
-        # Read supply temperature  
-        result = client.read_holding_registers(REGISTER_SUPPLY_TEMP, 1, slave=slave_id)
+        # Read supply temperature
+        result = _read_register(client, REGISTER_SUPPLY_TEMP, slave_id)
         if not result.isError():
             temp = result.registers[0] / 10.0
             print(f"✅ Supply Temperature (Reg 23): {temp}°C")
@@ -98,7 +107,7 @@ def main():
     
     host = sys.argv[1]
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 502
-    slave_id = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+    slave_id = int(sys.argv[3]) if len(sys.argv) > 3 else 0
     
     try:
         success = test_connection(host, port, slave_id)
