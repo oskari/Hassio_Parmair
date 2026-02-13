@@ -20,13 +20,18 @@ sys.path.insert(0, str(PROJECT_ROOT / "tools"))
 
 import re
 
+from custom_components.parmair.const import (
+    FILTER_STATE_MAP_V1,
+    FILTER_STATE_MAP_V2,
+    SOFTWARE_VERSION_2,
+)
 from tools.mock_coordinator import (
     MockCoordinator,
     HARDWARE_TYPE_MAP_V2,
     REG_POWER,
     REG_CONTROL_STATE,
-    SOFTWARE_VERSION_2,
     get_registers_for_version,
+    load_dump,
 )
 
 
@@ -227,6 +232,23 @@ class TestFilterInfo:
         # V1: 0=Replace, 1=OK
         # V2: 0=OK, 1=Ack, 2=Reminder
         assert state in (0, 1, 2), f"Invalid filter state: {state}"
+
+    def test_filter_state_display_mapping_v2(self) -> None:
+        """V2 filter_state=0 (Idle/OK) must display as 'OK', not 'Replace'."""
+        coord = load_dump(PROJECT_ROOT / "tests" / "fixtures" / "MAC120-full-v2.json")
+        state = coord.data.get("filter_state")
+        assert state is not None, "Fixture must have filter_state"
+        is_v2 = (
+            coord.software_version == SOFTWARE_VERSION_2
+            or str(coord.software_version).startswith("2.")
+        )
+        assert is_v2, "MAC120-full-v2 fixture should be V2"
+        mapping = FILTER_STATE_MAP_V2 if is_v2 else FILTER_STATE_MAP_V1
+        display = mapping.get(int(state), "Unknown")
+        assert display == "OK", (
+            f"V2 filter_state=0 must display 'OK', got '{display}'. "
+            "V1 and V2 use different mappings (V1: 0=Replace, V2: 0=OK)."
+        )
 
     def test_filter_date_valid(self, coordinator: MockCoordinator) -> None:
         """Filter date components should be valid."""
